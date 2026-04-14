@@ -5,6 +5,7 @@ import com.lahoa.lahoa_be.service.CustomOAuth2UserService;
 import com.lahoa.lahoa_be.service.CustomOidcUserService;
 import com.lahoa.lahoa_be.util.SnowflakeIdGenerator;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -25,6 +26,7 @@ import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 import java.util.Arrays;
 import java.util.List;
 
+@Slf4j
 @Configuration
 @RequiredArgsConstructor
 public class SecurityConfig {
@@ -74,6 +76,7 @@ public class SecurityConfig {
                         )
                         .successHandler(oAuth2AuthSuccessHandler)
                         .failureHandler((request, response, exception) -> {
+                            log.warn("<<< Đăng nhập Google lỗi: ", exception);
                             String targetUrl = frontendURL + "/login?error=oauth2_cancelled";
                             response.sendRedirect(targetUrl);
                         })
