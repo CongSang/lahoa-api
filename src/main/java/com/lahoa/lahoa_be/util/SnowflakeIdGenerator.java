@@ -1,5 +1,8 @@
 package com.lahoa.lahoa_be.util;
 
+import org.springframework.stereotype.Component;
+
+@Component
 public class SnowflakeIdGenerator {
 
     // 1. Định nghĩa các mốc quan trọng

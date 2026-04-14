@@ -42,12 +42,6 @@ public class SecurityConfig {
     @Value("${app.activation.frontend.url}")
     private String frontendURL;
 
-    @Value("${snowflake.worker-id}")
-    private long workerId;
-
-    @Value("${snowflake.datacenter-id}")
-    private long datacenterId;
-
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity httpSecurity) {
         httpSecurity.cors(cors -> cors.configurationSource(corsConfigurationSource()))
@@ -107,10 +101,5 @@ public class SecurityConfig {
         DaoAuthenticationProvider authenticationProvider = new DaoAuthenticationProvider(appUserDetailsService);
         authenticationProvider.setPasswordEncoder(passwordEncoder());
         return new ProviderManager(authenticationProvider);
-    }
-
-    @Bean
-    public SnowflakeIdGenerator snowflakeIdGenerator() {
-        return new SnowflakeIdGenerator(workerId, datacenterId);
     }
 }

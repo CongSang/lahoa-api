@@ -6,7 +6,9 @@ import com.lahoa.lahoa_be.common.enums.Status;
 import com.lahoa.lahoa_be.entity.UserEntity;
 import com.lahoa.lahoa_be.repository.UserRepository;
 import com.lahoa.lahoa_be.securiry.UserPrincipal;
+import com.lahoa.lahoa_be.util.SnowflakeIdGenerator;
 import lombok.RequiredArgsConstructor;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.security.oauth2.client.userinfo.DefaultOAuth2UserService;
 import org.springframework.security.oauth2.client.userinfo.OAuth2UserRequest;
 import org.springframework.security.oauth2.core.OAuth2AuthenticationException;
@@ -20,12 +22,12 @@ import java.util.Optional;
 public class CustomOAuth2UserService extends DefaultOAuth2UserService {
 
     private final UserRepository userRepository;
+    private final SnowflakeIdGenerator idGenerator;
 
     @Override
     public OAuth2User loadUser(OAuth2UserRequest userRequest) throws OAuth2AuthenticationException {
         OAuth2User oAuth2User = super.loadUser(userRequest);
 
-        System.out.println(oAuth2User);
         String email = oAuth2User.getAttribute("email");
         String name = oAuth2User.getAttribute("name");
 
@@ -39,6 +41,7 @@ public class CustomOAuth2UserService extends DefaultOAuth2UserService {
             }
         } else {
             user = new UserEntity();
+            user.setId(idGenerator.nextId());
             user.setEmail(email);
             user.setFullName(name);
             user.setStatus(Status.ACTIVE);

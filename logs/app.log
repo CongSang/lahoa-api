@@ -2405,3 +2405,155 @@ Caused by: org.springframework.web.client.HttpClientErrorException$Unauthorized:
         (created_at, expiry_date, token, updated_at, user_id) 
     values
         (?, ?, ?, ?, ?)
+2026-04-14 11:06:17 WARN  HikariPool:825 - HikariPool-1 - Thread starvation or clock leap detected (housekeeper delta=4m27s251ms).
+2026-04-14 11:21:55 WARN  HikariPool:825 - HikariPool-1 - Thread starvation or clock leap detected (housekeeper delta=15m37s539ms).
+2026-04-14 11:38:00 WARN  HikariPool:825 - HikariPool-1 - Thread starvation or clock leap detected (housekeeper delta=15m34s685ms).
+2026-04-14 11:54:05 WARN  HikariPool:825 - HikariPool-1 - Thread starvation or clock leap detected (housekeeper delta=16m5s665ms).
+2026-04-14 12:02:22 WARN  HikariPool:825 - HikariPool-1 - Thread starvation or clock leap detected (housekeeper delta=5m46s357ms).
+2026-04-14 12:08:44 WARN  HikariPool:825 - HikariPool-1 - Thread starvation or clock leap detected (housekeeper delta=5m52s668ms).
+2026-04-14 12:09:46 INFO  GracefulShutdown:54 - Commencing graceful shutdown. Waiting for active requests to complete
+2026-04-14 12:09:46 INFO  GracefulShutdown:76 - Graceful shutdown complete
+2026-04-14 12:09:46 INFO  LocalContainerEntityManagerFactoryBean:693 - Closing JPA EntityManagerFactory for persistence unit 'default'
+2026-04-14 12:09:46 INFO  HikariDataSource:349 - HikariPool-1 - Shutdown initiated...
+2026-04-14 12:09:46 INFO  HikariDataSource:351 - HikariPool-1 - Shutdown completed.
+2026-04-14 12:33:35 INFO  LahoaBeApplication:54 - Starting LahoaBeApplication using Java 21.0.10 with PID 97836 (/Users/congsang/lahoa_shop/lahoa_website/lahoa-be/target/classes started by congsang in /Users/congsang/lahoa_shop/lahoa_website/lahoa-be)
+2026-04-14 12:33:35 INFO  LahoaBeApplication:652 - No active profile set, falling back to 1 default profile: "default"
+2026-04-14 12:33:35 INFO  Version:18 - HV000001: Hibernate Validator 9.0.1.Final
+2026-04-14 12:33:35 INFO  RepositoryConfigurationDelegate:145 - Bootstrapping Spring Data JPA repositories in DEFAULT mode.
+2026-04-14 12:33:35 INFO  RepositoryConfigurationDelegate:213 - Finished Spring Data repository scanning in 24 ms. Found 2 JPA repository interfaces.
+2026-04-14 12:33:36 INFO  TomcatWebServer:114 - Tomcat initialized with port 8080 (http)
+2026-04-14 12:33:36 INFO  Http11NioProtocol:168 - Initializing ProtocolHandler ["http-nio-8080"]
+2026-04-14 12:33:36 INFO  StandardService:168 - Starting service [Tomcat]
+2026-04-14 12:33:36 INFO  StandardEngine:168 - Starting Servlet engine: [Apache Tomcat/11.0.18]
+2026-04-14 12:33:36 INFO  WebApplicationContextInitializer:77 - Root WebApplicationContext: initialization completed in 718 ms
+2026-04-14 12:33:36 INFO  jpa:102 - HHH008540: Processing PersistenceUnitInfo [name: default]
+2026-04-14 12:33:36 INFO  core:41 - HHH000001: Hibernate ORM core version 7.2.4.Final
+2026-04-14 12:33:36 INFO  SpringPersistenceUnitInfo:129 - No LoadTimeWeaver setup: ignoring JPA class transformer
+2026-04-14 12:33:36 INFO  HikariDataSource:109 - HikariPool-1 - Starting...
+2026-04-14 12:33:36 INFO  HikariPool:580 - HikariPool-1 - Added connection com.mysql.cj.jdbc.ConnectionImpl@2bd7f686
+2026-04-14 12:33:36 INFO  HikariDataSource:122 - HikariPool-1 - Start completed.
+2026-04-14 12:33:36 INFO  pooling:179 - HHH10001005: Database info:
+	Database JDBC URL [jdbc:mysql://localhost:3306/lahoamanager]
+	Database driver: MySQL Connector/J
+	Database dialect: MySQLDialect
+	Database version: 8.0.45
+	Default catalog/schema: lahoamanager/undefined
+	Autocommit mode: undefined/unknown
+	Isolation level: REPEATABLE_READ [default REPEATABLE_READ]
+	JDBC fetch size: none
+	Pool: DataSourceConnectionProvider
+	Minimum pool size: undefined/unknown
+	Maximum pool size: undefined/unknown
+2026-04-14 12:33:37 INFO  core:53 - HHH000489: No JTA platform available (set 'hibernate.transaction.jta.platform' to enable JTA platform integration)
+2026-04-14 12:33:37 INFO  LocalContainerEntityManagerFactoryBean:464 - Initialized JPA EntityManagerFactory for persistence unit 'default'
+2026-04-14 12:33:37 INFO  QueryEnhancerFactories:48 - Hibernate is in classpath; If applicable, HQL parser will be used.
+2026-04-14 12:33:37 WARN  JpaBaseConfiguration$JpaWebConfiguration:247 - spring.jpa.open-in-view is enabled by default. Therefore, database queries may be performed during view rendering. Explicitly configure spring.jpa.open-in-view to disable this warning
+2026-04-14 12:33:37 INFO  InitializeUserDetailsBeanManagerConfigurer$InitializeUserDetailsManagerConfigurer:110 - Global AuthenticationManager configured with UserDetailsService bean with name appUserDetailsService
+2026-04-14 12:33:37 INFO  Http11NioProtocol:168 - Starting ProtocolHandler ["http-nio-8080"]
+2026-04-14 12:33:37 INFO  TomcatWebServer:240 - Tomcat started on port 8080 (http) with context path '/api'
+2026-04-14 12:33:37 INFO  LahoaBeApplication:60 - Started LahoaBeApplication in 2.772 seconds (process running for 3.107)
+2026-04-14 12:33:42 INFO  [/api]:168 - Initializing Spring DispatcherServlet 'dispatcherServlet'
+2026-04-14 12:33:42 INFO  DispatcherServlet:523 - Initializing Servlet 'dispatcherServlet'
+2026-04-14 12:33:42 INFO  DispatcherServlet:545 - Completed initialization in 1 ms
+2026-04-14 12:33:52 DEBUG SQL:126 - 
+    select
+        ue1_0.id,
+        ue1_0.activation_token,
+        ue1_0.created_at,
+        ue1_0.email,
+        ue1_0.full_name,
+        ue1_0.password,
+        ue1_0.phone,
+        ue1_0.provider,
+        ue1_0.role,
+        ue1_0.status,
+        ue1_0.updated_at,
+        ue1_0.user_image_url 
+    from
+        user ue1_0 
+    where
+        ue1_0.email=?
+2026-04-14 12:33:52 DEBUG SQL:126 - 
+    select
+        rte1_0.id,
+        rte1_0.created_at,
+        rte1_0.expiry_date,
+        rte1_0.token,
+        rte1_0.updated_at,
+        rte1_0.user_id 
+    from
+        refresh_token rte1_0 
+    where
+        rte1_0.user_id=?
+2026-04-14 12:33:52 DEBUG SQL:126 - 
+    select
+        ue1_0.id,
+        ue1_0.activation_token,
+        ue1_0.created_at,
+        ue1_0.email,
+        ue1_0.full_name,
+        ue1_0.password,
+        ue1_0.phone,
+        ue1_0.provider,
+        ue1_0.role,
+        ue1_0.status,
+        ue1_0.updated_at,
+        ue1_0.user_image_url 
+    from
+        user ue1_0 
+    where
+        ue1_0.id=?
+2026-04-14 12:33:52 DEBUG SQL:126 - 
+    delete 
+    from
+        refresh_token 
+    where
+        id=?
+2026-04-14 12:33:52 DEBUG SQL:126 - 
+    select
+        ue1_0.id,
+        ue1_0.activation_token,
+        ue1_0.created_at,
+        ue1_0.email,
+        ue1_0.full_name,
+        ue1_0.password,
+        ue1_0.phone,
+        ue1_0.provider,
+        ue1_0.role,
+        ue1_0.status,
+        ue1_0.updated_at,
+        ue1_0.user_image_url 
+    from
+        user ue1_0 
+    where
+        ue1_0.id=?
+2026-04-14 12:33:52 DEBUG SQL:126 - 
+    select
+        null,
+        ue1_0.activation_token,
+        ue1_0.created_at,
+        ue1_0.email,
+        ue1_0.full_name,
+        ue1_0.password,
+        ue1_0.phone,
+        ue1_0.provider,
+        ue1_0.role,
+        ue1_0.status,
+        ue1_0.updated_at,
+        ue1_0.user_image_url 
+    from
+        user ue1_0 
+    where
+        ue1_0.id=?
+2026-04-14 12:33:52 DEBUG SQL:126 - 
+    insert 
+    into
+        refresh_token
+        (created_at, expiry_date, token, updated_at, user_id) 
+    values
+        (?, ?, ?, ?, ?)
+2026-04-14 12:34:16 INFO  GracefulShutdown:54 - Commencing graceful shutdown. Waiting for active requests to complete
+2026-04-14 12:34:16 INFO  GracefulShutdown:76 - Graceful shutdown complete
+2026-04-14 12:34:16 INFO  LocalContainerEntityManagerFactoryBean:693 - Closing JPA EntityManagerFactory for persistence unit 'default'
+2026-04-14 12:34:16 INFO  HikariDataSource:349 - HikariPool-1 - Shutdown initiated...
+2026-04-14 12:34:16 INFO  HikariDataSource:351 - HikariPool-1 - Shutdown completed.

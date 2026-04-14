@@ -6,7 +6,9 @@ import com.lahoa.lahoa_be.common.enums.Status;
 import com.lahoa.lahoa_be.entity.UserEntity;
 import com.lahoa.lahoa_be.repository.UserRepository;
 import com.lahoa.lahoa_be.securiry.UserPrincipal;
+import com.lahoa.lahoa_be.util.SnowflakeIdGenerator;
 import lombok.RequiredArgsConstructor;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.security.authentication.InternalAuthenticationServiceException;
 import org.springframework.security.core.AuthenticationException;
 import org.springframework.security.oauth2.client.oidc.userinfo.OidcUserRequest;
@@ -20,6 +22,7 @@ import org.springframework.stereotype.Service;
 public class CustomOidcUserService extends OidcUserService {
 
     private final UserRepository userRepository;
+    private final SnowflakeIdGenerator idGenerator;
 
     @Override
     public OidcUser loadUser(OidcUserRequest userRequest) throws OAuth2AuthenticationException {
@@ -45,6 +48,7 @@ public class CustomOidcUserService extends OidcUserService {
 
     private UserEntity registerNewUser(OidcUser oidcUser) {
         UserEntity user = new UserEntity();
+        user.setId(idGenerator.nextId());
         user.setEmail(oidcUser.getEmail());
         user.setFullName(oidcUser.getFullName());
         user.setUserImageUrl(oidcUser.getPicture());
