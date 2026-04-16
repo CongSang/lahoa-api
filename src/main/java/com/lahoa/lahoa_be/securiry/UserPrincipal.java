@@ -13,21 +13,34 @@ import org.springframework.security.oauth2.core.oidc.OidcUserInfo;
 import org.springframework.security.oauth2.core.oidc.user.OidcUser;
 import org.springframework.security.oauth2.core.user.OAuth2User;
 
-import java.util.Collection;
-import java.util.List;
-import java.util.Map;
+import java.io.Serializable;
+import java.util.*;
 
 @Data
 @NullMarked
 @NoArgsConstructor
-public class UserPrincipal implements UserDetails, OidcUser, OAuth2User {
+public class UserPrincipal implements UserDetails, OidcUser, OAuth2User, Serializable {
 
     private UserEntity user;
     private Map<String, Object> attributes;
+    private Collection<? extends GrantedAuthority> authorities;
 
     public UserPrincipal(UserEntity user, Map<String, Object> attributes) {
         this.user = user;
         this.attributes = attributes;
+
+        Set<GrantedAuthority> auths = new HashSet<>();
+        if (user.getRoles() != null) {
+            user.getRoles().forEach(role -> {
+                auths.add(new SimpleGrantedAuthority("ROLE_" + role.getName()));
+                if (role.getPermissions() != null) {
+                    role.getPermissions().forEach(p -> {
+                        auths.add(new SimpleGrantedAuthority(p.getName()));
+                    });
+                }
+            });
+        }
+        this.authorities = auths;
     }
 
     public static UserPrincipal create(UserEntity user) {
@@ -43,7 +56,7 @@ public class UserPrincipal implements UserDetails, OidcUser, OAuth2User {
 
     @Override
     public Collection<? extends GrantedAuthority> getAuthorities() {
-        return List.of(new SimpleGrantedAuthority("ROLE_" + user.getRole().name()));
+        return authorities;
     }
 
     @Override

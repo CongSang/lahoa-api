@@ -29,8 +29,6 @@ public class UserMapper {
                 .phone(userEntity.getPhone())
                 .email(userEntity.getEmail())
                 .userImageUrl(userEntity.getUserImageUrl())
-                .createdAt(userEntity.getCreatedAt())
-                .updatedAt(userEntity.getUpdatedAt())
                 .build();
     }
 }

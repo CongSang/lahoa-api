@@ -7,6 +7,7 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import java.time.LocalDateTime;
+import java.util.Set;
 
 @Data
 @AllArgsConstructor
@@ -18,6 +19,6 @@ public class UserResponseDTO {
     private String email;
     private String phone;
     private String userImageUrl;
-    private LocalDateTime createdAt;
-    private LocalDateTime updatedAt;
+    private Set<String> roles;
+    private Set<String> permissions;
 }

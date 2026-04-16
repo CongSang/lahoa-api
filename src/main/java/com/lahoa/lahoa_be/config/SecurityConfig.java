@@ -3,15 +3,16 @@ package com.lahoa.lahoa_be.config;
 import com.lahoa.lahoa_be.service.AppUserDetailsService;
 import com.lahoa.lahoa_be.service.CustomOAuth2UserService;
 import com.lahoa.lahoa_be.service.CustomOidcUserService;
-import com.lahoa.lahoa_be.util.SnowflakeIdGenerator;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.http.HttpMethod;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.ProviderManager;
 import org.springframework.security.authentication.dao.DaoAuthenticationProvider;
+import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
 import org.springframework.security.config.http.SessionCreationPolicy;
@@ -29,6 +30,7 @@ import java.util.List;
 @Slf4j
 @Configuration
 @RequiredArgsConstructor
+@EnableMethodSecurity
 public class SecurityConfig {
 
     private final AppUserDetailsService appUserDetailsService;
@@ -51,11 +53,10 @@ public class SecurityConfig {
                         .accessDeniedHandler(accessDeniedHandler)
                 )
                 .authorizeHttpRequests(auth -> auth
-                                .requestMatchers("/auth/**").permitAll()
-                                .requestMatchers("/", "/login", "/oauth2/**").permitAll()
-                                .requestMatchers("/admin/**").hasRole("ADMIN")
-//                        .requestMatchers(HttpMethod.POST, "/api/v1/products/**").hasRole("ADMIN")
-                                .requestMatchers("/**").hasAnyRole("CUSTOMER", "ADMIN", "STAFF")
+                                .requestMatchers( "/auth/**").permitAll()
+                                .requestMatchers(HttpMethod.GET, "/products/**").permitAll()
+                                .requestMatchers(HttpMethod.GET, "/categories/**").permitAll()
+                                .requestMatchers( "/", "/login", "/oauth2/**").permitAll()
                                 .anyRequest().authenticated()
                 )
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))

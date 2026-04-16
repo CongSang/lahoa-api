@@ -7,6 +7,7 @@ import com.lahoa.lahoa_be.dto.response.UserResponseDTO;
 import com.lahoa.lahoa_be.securiry.UserPrincipal;
 import com.lahoa.lahoa_be.service.AuthenticationService;
 import com.lahoa.lahoa_be.service.RefreshTokenService;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
@@ -24,7 +25,7 @@ public class AuthenticationController {
     private final RefreshTokenService refreshTokenService;
 
     @PostMapping("/register")
-    public ResponseEntity<UserResponseDTO> register(@RequestBody UserRequestDTO userDTO) {
+    public ResponseEntity<UserResponseDTO> register(@Valid @RequestBody UserRequestDTO userDTO) {
         log.info(">>> Yêu cầu đăng ký tài khoản: Email: {}", userDTO.getEmail());
         UserResponseDTO registeredUser = authService.registerUser(userDTO);
         return ResponseEntity.status(HttpStatus.CREATED).body(registeredUser);
@@ -42,7 +43,7 @@ public class AuthenticationController {
     }
 
     @PostMapping("/login")
-    public ResponseEntity<AuthResponseDTO> login(@RequestBody AuthRequestDTO authRequest) {
+    public ResponseEntity<AuthResponseDTO> login(@Valid @RequestBody AuthRequestDTO authRequest) {
         log.info(">>> Yêu cầu đăng nhập: Email: {}", authRequest.getEmail());
         return ResponseEntity.ok(authService.authenticate(authRequest));
     }

@@ -57,7 +57,6 @@ public class RefreshTokenService {
                     return AuthResponseDTO.builder()
                             .token(newToken)
                             .refreshToken(refreshToken)
-                            .user(userMapper.toDTO(user))
                             .build();
                 })
                 .orElseThrow(() -> new RuntimeException("Refresh token không tồn tại hoặc đã bị xóa!"));
