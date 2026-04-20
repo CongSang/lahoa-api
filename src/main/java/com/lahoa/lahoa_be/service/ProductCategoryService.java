@@ -4,6 +4,7 @@ import com.lahoa.lahoa_be.common.enums.Status;
 import com.lahoa.lahoa_be.dto.filter.CategoryFilter;
 import com.lahoa.lahoa_be.dto.request.CategoryRequestDTO;
 import com.lahoa.lahoa_be.dto.request.PagedRequestDTO;
+import com.lahoa.lahoa_be.dto.response.CategoryEcResponseDTO;
 import com.lahoa.lahoa_be.dto.response.CategoryResponseDTO;
 import com.lahoa.lahoa_be.dto.response.PagedResponseDTO;
 import com.lahoa.lahoa_be.entity.ProductCategoryEntity;
@@ -15,6 +16,7 @@ import com.lahoa.lahoa_be.repository.ProductCategoryRepository;
 import com.lahoa.lahoa_be.util.SlugUtils;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -22,9 +24,9 @@ import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
-import java.util.Optional;
 import java.util.stream.Collectors;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class ProductCategoryService {
@@ -35,16 +37,15 @@ public class ProductCategoryService {
 
     // Admin: Lấy danh sách
     public PagedResponseDTO<CategoryResponseDTO> getCategories(
-            PagedRequestDTO pagedRequest,
             CategoryFilter filter
     ) {
-        Sort sort = pagedRequest.getSortOrder().equalsIgnoreCase(Sort.Direction.ASC.name())
-                ? Sort.by(pagedRequest.getSortField()).ascending()
-                : Sort.by(pagedRequest.getSortField()).descending();
+        Sort sort = filter.getSortOrder().equalsIgnoreCase(Sort.Direction.ASC.name())
+                ? Sort.by(filter.getSortField()).ascending()
+                : Sort.by(filter.getSortField()).descending();
 
         Pageable pageable = PageRequest.of(
-                pagedRequest.getPage(),
-                pagedRequest.getSize(),
+                filter.getPage(),
+                filter.getSize(),
                 sort
         );
 
@@ -52,7 +53,7 @@ public class ProductCategoryService {
                 .findByFilters(filter.getKeyword(), filter.getStatus(), filter.getParentId(), pageable);
 
         List<CategoryResponseDTO> content = categoriesPaged.getContent().stream()
-                .map(categoryMapper::toDTONoChild)
+                .map(categoryMapper::toDTO)
                 .collect(Collectors.toList());
 
         return pagedMapper.toDTO(categoriesPaged, content);
@@ -61,18 +62,18 @@ public class ProductCategoryService {
     // Admin: Lấy tất cả danh mục cha cao nhất
     public List<CategoryResponseDTO> getCategoryParent() {
         List<ProductCategoryEntity> rootCategories = categoryRepository.findByParentIsNullOrderByDisplayOrderAsc();
-        return rootCategories.stream().map(categoryMapper::toDTONoChild).collect(Collectors.toList());
+        return rootCategories.stream().map(categoryMapper::toDTO).collect(Collectors.toList());
     }
 
     // EC: Lấy chi tiết
-    public CategoryResponseDTO getCategoryDetail(String slug) {
+    public CategoryEcResponseDTO getCategoryDetails(String slug) {
         ProductCategoryEntity response = categoryRepository.findBySlug(slug)
                 .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy danh mục này"));
-        return categoryMapper.toDTONoChild(response);
+        return categoryMapper.toEcDTO(response);
     }
 
     // EC: Lấy tất cả danh mục để khách hàng filter
-    public List<CategoryResponseDTO> getCategoryTree() {
+    public List<CategoryEcResponseDTO> getCategoryTree() {
         List<ProductCategoryEntity> categories = categoryRepository.findAllByStatusOrderByDisplayOrderAsc(Status.ACTIVE);
         return categories.stream()
                 .filter(cat -> cat.getParent() == null)
@@ -147,5 +148,13 @@ public class ProductCategoryService {
         // }
 
         categoryRepository.delete(category);
+    }
+
+    @Transactional
+    public void updateStatus(Long id, Status status) {
+        ProductCategoryEntity category = categoryRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy danh mục cần cập nhật"));
+        category.setStatus(status);
+        categoryRepository.save(category);
     }
 }

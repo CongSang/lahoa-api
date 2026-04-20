@@ -3,6 +3,7 @@ package com.lahoa.lahoa_be.mapper;
 import com.lahoa.lahoa_be.common.enums.Status;
 import com.lahoa.lahoa_be.dto.request.CategoryRequestDTO;
 import com.lahoa.lahoa_be.dto.request.UserRequestDTO;
+import com.lahoa.lahoa_be.dto.response.CategoryEcResponseDTO;
 import com.lahoa.lahoa_be.dto.response.CategoryResponseDTO;
 import com.lahoa.lahoa_be.dto.response.UserResponseDTO;
 import com.lahoa.lahoa_be.entity.ProductCategoryEntity;
@@ -35,13 +36,13 @@ public class ProductCategoryMapper {
                 .slug(entity.getSlug())
                 .imageUrl(entity.getImageUrl())
                 .displayOrder(entity.getDisplayOrder())
-                .children(entity.getChildren().stream().map(this::toDTO).collect(Collectors.toList()))
+                .status(entity.getStatus())
                 .build();
     }
 
-    public CategoryResponseDTO toDTONoChild(ProductCategoryEntity entity) {
+    public CategoryEcResponseDTO toEcDTO(ProductCategoryEntity entity) {
         if (entity == null) return null;
-        return CategoryResponseDTO.builder()
+        return CategoryEcResponseDTO.builder()
                 .id(entity.getId())
                 .name(entity.getName())
                 .slug(entity.getSlug())
@@ -49,8 +50,8 @@ public class ProductCategoryMapper {
                 .build();
     }
 
-    public CategoryResponseDTO toTree(ProductCategoryEntity category, List<ProductCategoryEntity> allCategories) {
-        return CategoryResponseDTO.builder()
+    public CategoryEcResponseDTO toTree(ProductCategoryEntity category, List<ProductCategoryEntity> allCategories) {
+        return CategoryEcResponseDTO.builder()
                 .id(category.getId())
                 .name(category.getName())
                 .slug(category.getSlug())

@@ -1,5 +1,6 @@
 package com.lahoa.lahoa_be.dto.response;
 
+import com.lahoa.lahoa_be.common.enums.Status;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -17,5 +18,7 @@ public class CategoryResponseDTO {
     private String slug;
     private String imageUrl;
     private Integer displayOrder;
+    private Long productCount;
+    private Status status;
     private List<CategoryResponseDTO> children;
 }

@@ -15,9 +15,14 @@ import java.util.Optional;
 
 public interface ProductCategoryRepository extends JpaRepository<ProductCategoryEntity, Long>  {
 
-    @Query("SELECT c FROM ProductCategoryEntity c WHERE c.status = :status " +
-            "AND (:keyword IS NULL OR c.name LIKE %:keyword% OR c.description LIKE %:keyword%) " +
-            "AND (:parentId IS NULL OR c.parent.id = :parentId)")
+    @Query("SELECT c FROM ProductCategoryEntity c WHERE " +
+            "(:status IS NULL OR c.status = :status) " +
+            "AND (:keyword IS NULL OR :keyword = '' OR LOWER(c.name) LIKE LOWER(CONCAT('%', :keyword, '%'))) " +
+            "AND (" +
+            "   (:parentId IS NULL) " +
+            "   OR (:parentId = -1 AND c.parent IS NULL) " +
+            "   OR (c.parent.id = :parentId)" +
+            ")")
     Page<ProductCategoryEntity> findByFilters(
             @Param("keyword") String keyword,
             @Param("status") Status status,
