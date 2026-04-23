@@ -1,13 +1,10 @@
 package com.lahoa.lahoa_be.mapper;
 
-import com.lahoa.lahoa_be.common.enums.Status;
 import com.lahoa.lahoa_be.dto.request.CategoryRequestDTO;
-import com.lahoa.lahoa_be.dto.request.UserRequestDTO;
 import com.lahoa.lahoa_be.dto.response.CategoryEcResponseDTO;
 import com.lahoa.lahoa_be.dto.response.CategoryResponseDTO;
-import com.lahoa.lahoa_be.dto.response.UserResponseDTO;
+import com.lahoa.lahoa_be.dto.response.DropdownResponseDTO;
 import com.lahoa.lahoa_be.entity.ProductCategoryEntity;
-import com.lahoa.lahoa_be.entity.UserEntity;
 import org.springframework.stereotype.Component;
 
 import java.util.List;
@@ -24,7 +21,7 @@ public class ProductCategoryMapper {
                 .imageUrl(dto.getImageUrl())
                 .displayOrder(dto.getDisplayOrder())
                 .slug(slug)
-                .status(Status.ACTIVE)
+                .status(dto.getStatus())
                 .build();
     }
 
@@ -33,8 +30,10 @@ public class ProductCategoryMapper {
         return CategoryResponseDTO.builder()
                 .id(entity.getId())
                 .name(entity.getName())
+                .description(entity.getDescription())
                 .slug(entity.getSlug())
                 .imageUrl(entity.getImageUrl())
+                .parent(this.toDTO(entity.getParent()))
                 .displayOrder(entity.getDisplayOrder())
                 .status(entity.getStatus())
                 .build();
@@ -60,6 +59,14 @@ public class ProductCategoryMapper {
                         .filter(cat -> cat.getParent() != null && cat.getParent().getId().equals(category.getId()))
                         .map(child -> toTree(child, allCategories))
                         .collect(Collectors.toList()))
+                .build();
+    }
+
+    public DropdownResponseDTO toDropdown(ProductCategoryEntity entity) {
+        if (entity == null) return null;
+        return DropdownResponseDTO.builder()
+                .value(entity.getId())
+                .label(entity.getName())
                 .build();
     }
 }

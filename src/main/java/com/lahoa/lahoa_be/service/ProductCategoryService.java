@@ -3,9 +3,9 @@ package com.lahoa.lahoa_be.service;
 import com.lahoa.lahoa_be.common.enums.Status;
 import com.lahoa.lahoa_be.dto.filter.CategoryFilter;
 import com.lahoa.lahoa_be.dto.request.CategoryRequestDTO;
-import com.lahoa.lahoa_be.dto.request.PagedRequestDTO;
 import com.lahoa.lahoa_be.dto.response.CategoryEcResponseDTO;
 import com.lahoa.lahoa_be.dto.response.CategoryResponseDTO;
+import com.lahoa.lahoa_be.dto.response.DropdownResponseDTO;
 import com.lahoa.lahoa_be.dto.response.PagedResponseDTO;
 import com.lahoa.lahoa_be.entity.ProductCategoryEntity;
 import com.lahoa.lahoa_be.exception.BadRequestException;
@@ -24,6 +24,7 @@ import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 @Slf4j
@@ -60,9 +61,9 @@ public class ProductCategoryService {
     }
 
     // Admin: Lấy tất cả danh mục cha cao nhất
-    public List<CategoryResponseDTO> getCategoryParent() {
+    public List<DropdownResponseDTO> getCategoryParent() {
         List<ProductCategoryEntity> rootCategories = categoryRepository.findByParentIsNullOrderByDisplayOrderAsc();
-        return rootCategories.stream().map(categoryMapper::toDTO).collect(Collectors.toList());
+        return rootCategories.stream().map(categoryMapper::toDropdown).collect(Collectors.toList());
     }
 
     // EC: Lấy chi tiết
@@ -90,12 +91,25 @@ public class ProductCategoryService {
 
     @Transactional
     public CategoryResponseDTO create(CategoryRequestDTO request) {
-        if(categoryRepository.existsByName(request.getName())) {
-            throw new BadRequestException("Tên danh mục này đã tồn tại!");
-        }
+        Optional<ProductCategoryEntity> existing = categoryRepository.findByName(request.getName());
+        ProductCategoryEntity category;
 
         String slug = SlugUtils.makeSlug(request.getName());
-        ProductCategoryEntity category = categoryMapper.toEntity(request, slug);
+        if (existing.isPresent()) {
+            category = existing.get();
+
+            if (category.getStatus() == Status.DELETED) {
+                category.setStatus(Status.ACTIVE);
+                category.setSlug(slug);
+                category.setDescription(request.getDescription());
+                category.setDisplayOrder(request.getDisplayOrder());
+                category.setImageUrl(request.getImageUrl());
+            }
+
+            throw new BadRequestException("Tên danh mục đã tồn tại");
+        } else {
+            category = categoryMapper.toEntity(request, slug);
+        }
 
         if (request.getParentId() != null) {
             ProductCategoryEntity parent = categoryRepository.findById(request.getParentId())
@@ -113,16 +127,15 @@ public class ProductCategoryService {
     public CategoryResponseDTO update(Long id, CategoryRequestDTO request) {
         ProductCategoryEntity category = categoryRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy danh mục cần cập nhật"));
+        Optional<ProductCategoryEntity> existing = categoryRepository.findByName(request.getName());
 
-        if (!category.getName().equals(request.getName())) {
-            if(categoryRepository.existsByName(request.getName())) {
-                throw new BadRequestException("Tên danh mục này đã tồn tại!");
-            }
-            category.setName(request.getName());
-            category.setSlug(SlugUtils.makeSlug(request.getName()));
+        if (existing.isPresent() && !existing.get().getId().equals(id)) {
+            throw new BadRequestException("Tên danh mục đã tồn tại");
         }
 
-        if (!category.getParent().getId().equals(request.getParentId())) {
+        category.setSlug(SlugUtils.makeSlug(category.getName()));
+
+        if (request.getParentId() != null) {
             ProductCategoryEntity parentCategory = categoryRepository.findById(request.getParentId())
                     .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy danh mục cha để cập nhật"));
             category.setParent(parentCategory);
@@ -131,9 +144,11 @@ public class ProductCategoryService {
             category.setSlug(slug);
         }
 
+        category.setName(request.getName());
         category.setDescription(request.getDescription());
         category.setDisplayOrder(request.getDisplayOrder());
         category.setImageUrl(request.getImageUrl());
+        category.setStatus(request.getStatus());
 
         return categoryMapper.toDTO(categoryRepository.save(category));
     }
@@ -143,11 +158,15 @@ public class ProductCategoryService {
         ProductCategoryEntity category = categoryRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy danh mục để xóa"));
 
+        if (categoryRepository.existsByParentId(id)) {
+            throw new BadRequestException("Không thể xóa do danh mục có chứa danh mục con");
+        }
+
         // if (productRepository.countByCategoryId(id) > 0) {
-        //    throw new BadRequestException("Không thể xóa danh mục do đang có sản phẩm!");
+        //    throw new BadRequestException("Không thể xóa danh mục đang có sản phẩm!");
         // }
 
-        categoryRepository.delete(category);
+        category.setStatus(Status.DELETED);
     }
 
     @Transactional
@@ -155,6 +174,5 @@ public class ProductCategoryService {
         ProductCategoryEntity category = categoryRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy danh mục cần cập nhật"));
         category.setStatus(status);
-        categoryRepository.save(category);
     }
 }

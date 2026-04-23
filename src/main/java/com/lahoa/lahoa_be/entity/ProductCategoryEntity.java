@@ -3,16 +3,23 @@ package com.lahoa.lahoa_be.entity;
 import com.lahoa.lahoa_be.common.enums.Status;
 import jakarta.persistence.*;
 import lombok.*;
+import org.hibernate.annotations.SQLDelete;
 
 import java.util.ArrayList;
 import java.util.List;
 
 @EqualsAndHashCode(callSuper = true)
 @Entity
-@Table(name = "product_categories", indexes = {
-        @Index(name = "idx_category_slug", columnList = "slug"),
-        @Index(name = "idx_category_parent_id", columnList = "parent_id")
-})
+@Table(
+        name = "product_categories",
+        indexes = {
+                @Index(name = "idx_category_slug", columnList = "slug"),
+                @Index(name = "idx_category_parent_id", columnList = "parent_id")
+        },
+        uniqueConstraints = {
+                @UniqueConstraint(columnNames = {"name"})
+        }
+)
 @Data
 @NoArgsConstructor
 @AllArgsConstructor

@@ -1,5 +1,6 @@
 package com.lahoa.lahoa_be.dto.request;
 
+import com.lahoa.lahoa_be.common.enums.Status;
 import jakarta.validation.constraints.NotNull;
 import lombok.Data;
 
@@ -15,4 +16,5 @@ public class CategoryRequestDTO {
     private Long parentId;
     private String description;
     private Integer displayOrder;
+    private Status status;
 }

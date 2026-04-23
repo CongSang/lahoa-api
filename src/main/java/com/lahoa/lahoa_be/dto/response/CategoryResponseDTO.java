@@ -16,9 +16,11 @@ public class CategoryResponseDTO {
     private Long id;
     private String name;
     private String slug;
+    private String description;
     private String imageUrl;
     private Integer displayOrder;
     private Long productCount;
     private Status status;
+    private CategoryResponseDTO parent;
     private List<CategoryResponseDTO> children;
 }

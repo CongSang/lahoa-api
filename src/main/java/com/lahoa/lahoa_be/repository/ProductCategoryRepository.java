@@ -5,24 +5,34 @@ import com.lahoa.lahoa_be.entity.ProductCategoryEntity;
 import org.jspecify.annotations.NullMarked;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
-import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 
 public interface ProductCategoryRepository extends JpaRepository<ProductCategoryEntity, Long>  {
 
-    @Query("SELECT c FROM ProductCategoryEntity c WHERE " +
-            "(:status IS NULL OR c.status = :status) " +
-            "AND (:keyword IS NULL OR :keyword = '' OR LOWER(c.name) LIKE LOWER(CONCAT('%', :keyword, '%'))) " +
-            "AND (" +
-            "   (:parentId IS NULL) " +
-            "   OR (:parentId = -1 AND c.parent IS NULL) " +
-            "   OR (c.parent.id = :parentId)" +
-            ")")
+    @EntityGraph(attributePaths = {"parent"})
+    @Query("""
+            SELECT c
+            FROM ProductCategoryEntity c
+            LEFT JOIN FETCH c.parent
+            WHERE
+                (
+                    (:status IS NULL AND c.status <> 'DELETED')
+                    OR (:status IS NOT NULL AND c.status = :status)
+                )
+                AND (:keyword IS NULL OR :keyword = ''
+                     OR LOWER(c.name) LIKE LOWER(CONCAT('%', :keyword, '%')))
+                AND (
+                    (:parentId IS NULL)
+                    OR (:parentId = -1 AND c.parent IS NULL)
+                    OR (c.parent.id = :parentId)
+                )
+            """)
     Page<ProductCategoryEntity> findByFilters(
             @Param("keyword") String keyword,
             @Param("status") Status status,
@@ -34,7 +44,9 @@ public interface ProductCategoryRepository extends JpaRepository<ProductCategory
     @NullMarked
     Optional<ProductCategoryEntity> findById(Long id);
 
-    boolean existsByName(String name);
+    Optional<ProductCategoryEntity> findByName(String name);
+
+    boolean existsByParentId(Long parentId);
 
     List<ProductCategoryEntity> findByParentIsNullOrderByDisplayOrderAsc();
 
