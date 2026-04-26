@@ -1,17 +1,19 @@
 package com.lahoa.lahoa_be.service;
 
 import com.lahoa.lahoa_be.common.enums.Status;
-import com.lahoa.lahoa_be.dto.filter.CategoryFilter;
+import com.lahoa.lahoa_be.dto.filter.CategoryFilterRequestDTO;
 import com.lahoa.lahoa_be.dto.request.CategoryRequestDTO;
 import com.lahoa.lahoa_be.dto.response.CategoryEcResponseDTO;
 import com.lahoa.lahoa_be.dto.response.CategoryResponseDTO;
 import com.lahoa.lahoa_be.dto.response.DropdownResponseDTO;
 import com.lahoa.lahoa_be.dto.response.PagedResponseDTO;
 import com.lahoa.lahoa_be.entity.ProductCategoryEntity;
+import com.lahoa.lahoa_be.entity.ProductEntity;
 import com.lahoa.lahoa_be.exception.BadRequestException;
 import com.lahoa.lahoa_be.exception.ResourceNotFoundException;
 import com.lahoa.lahoa_be.mapper.PagedMapper;
 import com.lahoa.lahoa_be.mapper.ProductCategoryMapper;
+import com.lahoa.lahoa_be.repository.ProductCategoryMappingRepository;
 import com.lahoa.lahoa_be.repository.ProductCategoryRepository;
 import com.lahoa.lahoa_be.util.SlugUtils;
 import jakarta.transaction.Transactional;
@@ -23,8 +25,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 
-import java.util.List;
-import java.util.Optional;
+import java.util.*;
 import java.util.stream.Collectors;
 
 @Slf4j
@@ -34,11 +35,12 @@ public class ProductCategoryService {
 
     private final ProductCategoryRepository categoryRepository;
     private final ProductCategoryMapper categoryMapper;
+    private final ProductCategoryMappingRepository mappingRepository;
     private final PagedMapper pagedMapper;
 
     // Admin: Lấy danh sách
-    public PagedResponseDTO<CategoryResponseDTO> getCategories(
-            CategoryFilter filter
+    public PagedResponseDTO<CategoryResponseDTO> list(
+            CategoryFilterRequestDTO filter
     ) {
         Sort sort = filter.getSortOrder().equalsIgnoreCase(Sort.Direction.ASC.name())
                 ? Sort.by(filter.getSortField()).ascending()
@@ -53,11 +55,43 @@ public class ProductCategoryService {
         Page<ProductCategoryEntity> categoriesPaged = categoryRepository
                 .findByFilters(filter.getKeyword(), filter.getStatus(), filter.getParentId(), pageable);
 
-        List<CategoryResponseDTO> content = categoriesPaged.getContent().stream()
-                .map(categoryMapper::toDTO)
-                .collect(Collectors.toList());
+        List<ProductCategoryEntity> categories = categoriesPaged.getContent();
 
-        return pagedMapper.toDTO(categoriesPaged, content);
+        List<Long> ids = categories.stream()
+                .map(ProductCategoryEntity::getId)
+                .toList();
+
+        Map<Long, Long> countMap = mappingRepository
+                .countProductsByCategoryIds(ids)
+                .stream()
+                .collect(Collectors.toMap(
+                        r -> (Long) r[0],
+                        r -> (Long) r[1]
+                ));
+
+        Set<Long> parentSet = new HashSet<>(
+                categoryRepository.findParentIdsHavingChildren(ids)
+        );
+
+        List<CategoryResponseDTO> dtoList = categories.stream()
+                .map(c -> {
+                    CategoryResponseDTO dto = categoryMapper.toDTO(c);
+
+                    boolean isLeaf = !parentSet.contains(c.getId());
+
+                    dto.setProductCount(
+                            isLeaf ? countMap.getOrDefault(c.getId(), 0L) : 0
+                    );
+
+                    return dto;
+                })
+                .toList();
+
+//        List<CategoryResponseDTO> content = categoriesPaged.getContent().stream()
+//                .map(categoryMapper::toDTO)
+//                .collect(Collectors.toList());
+
+        return pagedMapper.toDTO(categoriesPaged, dtoList);
     }
 
     // Admin: Lấy tất cả danh mục cha cao nhất
@@ -67,9 +101,10 @@ public class ProductCategoryService {
     }
 
     // EC: Lấy chi tiết
-    public CategoryEcResponseDTO getCategoryDetails(String slug) {
+    public CategoryEcResponseDTO getBySlug(String slug) {
         ProductCategoryEntity response = categoryRepository.findBySlug(slug)
-                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy danh mục này"));
+                .filter(c -> c.getStatus() != Status.DELETED)
+                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy danh mục"));
         return categoryMapper.toEcDTO(response);
     }
 
@@ -89,84 +124,137 @@ public class ProductCategoryService {
         return getFullCategoryPath(category.getParent()) + "/" + category.getSlug();
     }
 
+    private ProductCategoryEntity getActiveCategory(Long id) {
+        ProductCategoryEntity category = categoryRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy danh mục"));
+
+        if (category.getStatus() == Status.DELETED) {
+            throw new BadRequestException("Danh mục đã bị xóa");
+        }
+
+        return category;
+    }
+
     @Transactional
     public CategoryResponseDTO create(CategoryRequestDTO request) {
-        Optional<ProductCategoryEntity> existing = categoryRepository.findByName(request.getName());
-        ProductCategoryEntity category;
+        String name = request.getName().trim();
+        categoryRepository.findByName(name)
+                .orElseThrow(() -> new BadRequestException("Tên danh mục đã tồn tại"));
 
-        String slug = SlugUtils.makeSlug(request.getName());
-        if (existing.isPresent()) {
-            category = existing.get();
 
-            if (category.getStatus() == Status.DELETED) {
-                category.setStatus(Status.ACTIVE);
-                category.setSlug(slug);
-                category.setDescription(request.getDescription());
-                category.setDisplayOrder(request.getDisplayOrder());
-                category.setImageUrl(request.getImageUrl());
-            }
-
-            throw new BadRequestException("Tên danh mục đã tồn tại");
-        } else {
-            category = categoryMapper.toEntity(request, slug);
-        }
+        String slug = generateUniqueSlug(SlugUtils.generateSlug(name), null);
+        ProductCategoryEntity category = categoryMapper.toEntity(request, slug);
 
         if (request.getParentId() != null) {
-            ProductCategoryEntity parent = categoryRepository.findById(request.getParentId())
-                    .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy danh mục cha để tạo mới"));
+            ProductCategoryEntity parent = getActiveCategory(request.getParentId());
             category.setParent(parent);
-
-            slug = getFullCategoryPath(category);
-            category.setSlug(slug);
         }
+
+        category.setPath(getFullCategoryPath(category));
+
+        log.info("Category {} created", category.getName());
 
         return categoryMapper.toDTO(categoryRepository.save(category));
     }
 
     @Transactional
     public CategoryResponseDTO update(Long id, CategoryRequestDTO request) {
-        ProductCategoryEntity category = categoryRepository.findById(id)
-                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy danh mục cần cập nhật"));
-        Optional<ProductCategoryEntity> existing = categoryRepository.findByName(request.getName());
+        String name = request.getName().trim();
+        ProductCategoryEntity category = getActiveCategory(id);
+        Optional<ProductCategoryEntity> existing = categoryRepository.findByName(name);
 
         if (existing.isPresent() && !existing.get().getId().equals(id)) {
             throw new BadRequestException("Tên danh mục đã tồn tại");
         }
 
-        category.setSlug(SlugUtils.makeSlug(category.getName()));
+        boolean parentChanged = false;
+        boolean nameChanged = !category.getName().equals(name);
 
-        if (request.getParentId() != null) {
-            ProductCategoryEntity parentCategory = categoryRepository.findById(request.getParentId())
-                    .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy danh mục cha để cập nhật"));
-            category.setParent(parentCategory);
-
-            String slug = getFullCategoryPath(category);
-            category.setSlug(slug);
+        if (nameChanged) {
+            category.setSlug(generateUniqueSlug(SlugUtils.generateSlug(name), category.getId()));
         }
 
-        category.setName(request.getName());
-        category.setDescription(request.getDescription());
+        if (request.getParentId() != null) {
+            if(request.getParentId() == id) {
+                throw new BadRequestException("Danh mục cha bị trùng với dang mục hiện tại");
+            }
+
+            ProductCategoryEntity parentCategory = getActiveCategory(request.getParentId());
+            if (!parentCategory.getId().equals(
+                    category.getParent() != null ? category.getParent().getId() : null
+            )) {
+                category.setParent(parentCategory);
+                parentChanged = true;
+            }
+        }
+
+        category.setName(name);
+        category.setDescription(
+                Optional.ofNullable(request.getDescription()).orElse("").trim());
         category.setDisplayOrder(request.getDisplayOrder());
         category.setImageUrl(request.getImageUrl());
         category.setStatus(request.getStatus());
+
+        if (nameChanged || parentChanged) {
+            category.setPath(getFullCategoryPath(category));
+        }
+
+        log.info("Category {} - '{}' updated", id, category.getName());
 
         return categoryMapper.toDTO(categoryRepository.save(category));
     }
 
     @Transactional
     public void delete(Long id) {
-        ProductCategoryEntity category = categoryRepository.findById(id)
-                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy danh mục để xóa"));
+        ProductCategoryEntity category = getActiveCategory(id);
 
         if (categoryRepository.existsByParentId(id)) {
-            throw new BadRequestException("Không thể xóa do danh mục có chứa danh mục con");
+            throw new BadRequestException("Không thể xóa danh mục có danh mục con");
         }
 
-        // if (productRepository.countByCategoryId(id) > 0) {
-        //    throw new BadRequestException("Không thể xóa danh mục đang có sản phẩm!");
-        // }
+        if (mappingRepository.existsByCategoryId(id)) {
+            throw new BadRequestException("Không thể xóa danh mục đang chứa sản phẩm");
+        }
 
+        mappingRepository.deleteByCategoryId(id);
+        category.setParent(null);
         category.setStatus(Status.DELETED);
+        category.setPath(null);
+
+        log.info("Category {} - '{}' marked as DELETED", id, category.getName());
+    }
+
+    private String generateUniqueSlug(String base, Long excludeId) {
+        String slug = base;
+        int i = 1;
+
+        while (categoryRepository.existsBySlugAndIdNot(slug, excludeId)) {
+            slug = base + "-" + i++;
+        }
+
+        return slug;
+    }
+
+    @Transactional
+    public CategoryResponseDTO restore(Long id) {
+
+        ProductCategoryEntity category = categoryRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy danh mục"));
+
+        if (category.getStatus() != Status.DELETED) {
+            throw new BadRequestException("Danh mục chưa bị xóa");
+        }
+
+        category.setStatus(Status.ACTIVE);
+        category.setParent(null);
+
+        category.setSlug(generateUniqueSlug(category.getSlug(), category.getId()));
+
+        category.setPath(category.getSlug());
+
+        log.info("Category {} - '{}' restored", id, category.getName());
+
+        return categoryMapper.toDTO(category);
     }
 
     @Transactional
@@ -174,5 +262,7 @@ public class ProductCategoryService {
         ProductCategoryEntity category = categoryRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy danh mục cần cập nhật"));
         category.setStatus(status);
+
+        log.info("Category {} - '{}' mark as {}", id, category.getName(), status);
     }
 }

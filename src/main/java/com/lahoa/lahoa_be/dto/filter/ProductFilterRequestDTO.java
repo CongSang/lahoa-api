@@ -5,11 +5,21 @@ import com.lahoa.lahoa_be.dto.request.PagedRequestDTO;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 
+import java.math.BigDecimal;
+import java.util.List;
+import java.util.Map;
+
 @EqualsAndHashCode(callSuper = true)
 @Data
-public class CategoryFilter extends PagedRequestDTO {
-
+public class ProductFilterRequestDTO extends PagedRequestDTO {
     private String keyword;
+
+    private Long categoryId;
+
+    private BigDecimal minPrice;
+    private BigDecimal maxPrice;
+
     private Status status;
-    private Long parentId;
+
+    private Map<Long, List<Long>> propertyValueIds;
 }

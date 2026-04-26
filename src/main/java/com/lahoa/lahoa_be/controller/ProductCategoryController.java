@@ -1,7 +1,7 @@
 package com.lahoa.lahoa_be.controller;
 
 import com.lahoa.lahoa_be.common.enums.Status;
-import com.lahoa.lahoa_be.dto.filter.CategoryFilter;
+import com.lahoa.lahoa_be.dto.filter.CategoryFilterRequestDTO;
 import com.lahoa.lahoa_be.dto.request.CategoryRequestDTO;
 import com.lahoa.lahoa_be.dto.response.CategoryEcResponseDTO;
 import com.lahoa.lahoa_be.dto.response.CategoryResponseDTO;
@@ -27,9 +27,9 @@ public class ProductCategoryController {
     private final ProductCategoryService categoryService;
 
     @GetMapping
-    public ResponseEntity<PagedResponseDTO<CategoryResponseDTO>> getCategories(
-            CategoryFilter filter) {
-        return ResponseEntity.ok(categoryService.getCategories(filter));
+    public ResponseEntity<PagedResponseDTO<CategoryResponseDTO>> list(
+            CategoryFilterRequestDTO filter) {
+        return ResponseEntity.ok(categoryService.list(filter));
     }
 
     @GetMapping("/dropdown")
@@ -49,6 +49,12 @@ public class ProductCategoryController {
         return ResponseEntity.ok(categoryService.update(id, request));
     }
 
+    @PutMapping("/{id}/restore")
+    public ResponseEntity<CategoryResponseDTO> restore(
+            @PathVariable Long id) {
+        return ResponseEntity.ok(categoryService.restore(id));
+    }
+
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> delete(@PathVariable Long id) {
         categoryService.delete(id);
@@ -61,8 +67,8 @@ public class ProductCategoryController {
     }
 
     @GetMapping("/{slug}")
-    public ResponseEntity<CategoryEcResponseDTO> getDetails(@PathVariable String slug) {
-        return ResponseEntity.ok(categoryService.getCategoryDetails(slug));
+    public ResponseEntity<CategoryEcResponseDTO> get(@PathVariable String slug) {
+        return ResponseEntity.ok(categoryService.getBySlug(slug));
     }
 
     @PatchMapping("/{id}/status")

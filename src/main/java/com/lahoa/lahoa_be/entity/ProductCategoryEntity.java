@@ -11,10 +11,11 @@ import java.util.List;
 @EqualsAndHashCode(callSuper = true)
 @Entity
 @Table(
-        name = "product_categories",
+        name = "categories",
         indexes = {
                 @Index(name = "idx_category_slug", columnList = "slug"),
-                @Index(name = "idx_category_parent_id", columnList = "parent_id")
+                @Index(name = "idx_category_parent_id", columnList = "parent_id"),
+                @Index(name = "idx_category_status", columnList = "status")
         },
         uniqueConstraints = {
                 @UniqueConstraint(columnNames = {"name"})
@@ -23,8 +24,10 @@ import java.util.List;
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
+@SQLDelete(sql = "UPDATE categories SET status = 'DELETED' WHERE id = ?")
 @Builder
 public class ProductCategoryEntity extends BaseEntity {
+
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
@@ -35,25 +38,32 @@ public class ProductCategoryEntity extends BaseEntity {
     @Column(nullable = false, unique = true)
     private String slug;
 
+    private String path;
+
     private String imageUrl;
 
     @Column(length = 500)
     private String description;
 
-    @Column(name = "display_order")
     private Integer displayOrder = 0;
 
     @Enumerated(EnumType.STRING)
     private Status status = Status.ACTIVE;
 
+    private String seoTitle;
+
+    private String seoDescription;
+
+    private String seoKeywords;
+
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "parent_id")
     private ProductCategoryEntity parent;
 
-    @OneToMany(mappedBy = "parent", cascade = CascadeType.ALL)
+    @OneToMany(mappedBy = "parent")
     @OrderBy("displayOrder ASC")
     private List<ProductCategoryEntity> children = new ArrayList<>();
 
-//    @OneToMany(mappedBy = "category")
-//    private List<Product> products;
+    @OneToMany(mappedBy = "category")
+    private List<ProductCategoryMappingEntity> productMappings = new ArrayList<>();
 }

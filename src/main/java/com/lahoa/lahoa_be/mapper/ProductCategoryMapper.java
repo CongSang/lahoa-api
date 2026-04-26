@@ -8,6 +8,7 @@ import com.lahoa.lahoa_be.entity.ProductCategoryEntity;
 import org.springframework.stereotype.Component;
 
 import java.util.List;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 @Component
@@ -16,8 +17,8 @@ public class ProductCategoryMapper {
     public ProductCategoryEntity toEntity(CategoryRequestDTO dto, String slug) {
         if (dto == null) return null;
         return ProductCategoryEntity.builder()
-                .name(dto.getName())
-                .description(dto.getDescription())
+                .name(dto.getName().trim())
+                .description(Optional.ofNullable(dto.getDescription()).orElse("").trim())
                 .imageUrl(dto.getImageUrl())
                 .displayOrder(dto.getDisplayOrder())
                 .slug(slug)
@@ -32,6 +33,7 @@ public class ProductCategoryMapper {
                 .name(entity.getName())
                 .description(entity.getDescription())
                 .slug(entity.getSlug())
+                .path(entity.getPath())
                 .imageUrl(entity.getImageUrl())
                 .parent(this.toDTO(entity.getParent()))
                 .displayOrder(entity.getDisplayOrder())

@@ -9,7 +9,7 @@ public class SlugUtils {
     private static final Pattern NON_LATIN = Pattern.compile("[^\\w-]");
     private static final Pattern WHITESPACE = Pattern.compile("[\\s]+");
 
-    public static String makeSlug(String input) {
+    public static String generateSlug(String input) {
         if (input == null || input.isEmpty()) {
             return "";
         }

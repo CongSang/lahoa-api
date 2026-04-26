@@ -51,4 +51,13 @@ public interface ProductCategoryRepository extends JpaRepository<ProductCategory
     List<ProductCategoryEntity> findByParentIsNullOrderByDisplayOrderAsc();
 
     List<ProductCategoryEntity> findAllByStatusOrderByDisplayOrderAsc(Status status);
+
+    @Query("""
+        SELECT c.id
+        FROM ProductCategoryEntity c
+        WHERE c.parent.id IN :ids
+    """)
+    List<Long> findParentIdsHavingChildren(List<Long> ids);
+
+    boolean existsBySlugAndIdNot(String slug, Long id);
 }
