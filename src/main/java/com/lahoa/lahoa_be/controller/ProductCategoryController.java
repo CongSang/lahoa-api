@@ -7,6 +7,7 @@ import com.lahoa.lahoa_be.dto.response.CategoryEcResponseDTO;
 import com.lahoa.lahoa_be.dto.response.CategoryResponseDTO;
 import com.lahoa.lahoa_be.dto.response.DropdownResponseDTO;
 import com.lahoa.lahoa_be.dto.response.PagedResponseDTO;
+import com.lahoa.lahoa_be.service.CloudinaryService;
 import com.lahoa.lahoa_be.service.ProductCategoryService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -25,6 +26,7 @@ import java.util.Map;
 public class ProductCategoryController {
 
     private final ProductCategoryService categoryService;
+    private final CloudinaryService cloudinaryService;
 
     @GetMapping
     public ResponseEntity<PagedResponseDTO<CategoryResponseDTO>> list(
@@ -76,5 +78,10 @@ public class ProductCategoryController {
         Status newStatus = Status.valueOf(body.get("status"));
         categoryService.updateStatus(id, newStatus);
         return ResponseEntity.ok().build();
+    }
+
+    @GetMapping("/upload-signature")
+    public Map<String, Object> getUploadSignature() {
+        return cloudinaryService.generateSignature("lahoa/categories");
     }
 }

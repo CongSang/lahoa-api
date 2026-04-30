@@ -44,6 +44,8 @@ public class ProductEntity extends BaseEntity {
 
     private String mainImage;
 
+    private String imagePublicId;
+
     @Enumerated(EnumType.STRING)
     private Status status;
 

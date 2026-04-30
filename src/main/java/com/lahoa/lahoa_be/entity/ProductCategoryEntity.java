@@ -42,6 +42,8 @@ public class ProductCategoryEntity extends BaseEntity {
 
     private String imageUrl;
 
+    private String imagePublicId;
+
     @Column(length = 500)
     private String description;
 

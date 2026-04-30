@@ -34,6 +34,7 @@ import java.util.stream.Collectors;
 public class ProductCategoryService {
 
     private final ProductCategoryRepository categoryRepository;
+    private final CloudinaryService cloudinaryService;
     private final ProductCategoryMapper categoryMapper;
     private final ProductCategoryMappingRepository mappingRepository;
     private final PagedMapper pagedMapper;
@@ -87,10 +88,6 @@ public class ProductCategoryService {
                 })
                 .toList();
 
-//        List<CategoryResponseDTO> content = categoriesPaged.getContent().stream()
-//                .map(categoryMapper::toDTO)
-//                .collect(Collectors.toList());
-
         return pagedMapper.toDTO(categoriesPaged, dtoList);
     }
 
@@ -140,68 +137,110 @@ public class ProductCategoryService {
         String name = request.getName().trim();
         categoryRepository.findByName(name)
                 .orElseThrow(() -> new BadRequestException("Tên danh mục đã tồn tại"));
+        try {
+            String slug = generateUniqueSlug(SlugUtils.generateSlug(name), null);
+            ProductCategoryEntity category = categoryMapper.toEntity(request, slug);
 
+            if (request.getParentId() != null) {
+                ProductCategoryEntity parent = getActiveCategory(request.getParentId());
+                category.setParent(parent);
+            }
 
-        String slug = generateUniqueSlug(SlugUtils.generateSlug(name), null);
-        ProductCategoryEntity category = categoryMapper.toEntity(request, slug);
+            category.setPath(getFullCategoryPath(category));
 
-        if (request.getParentId() != null) {
-            ProductCategoryEntity parent = getActiveCategory(request.getParentId());
-            category.setParent(parent);
+            log.info("Category {} created", category.getName());
+
+            return categoryMapper.toDTO(categoryRepository.save(category));
+        } catch (Exception e) {
+            if (request.getImagePublicId() != null) {
+                cloudinaryService.deleteImage(request.getImagePublicId());
+            }
+            throw e;
         }
+    }
 
-        category.setPath(getFullCategoryPath(category));
+    private void updateChildrenPath(ProductCategoryEntity parent) {
 
-        log.info("Category {} created", category.getName());
+        List<ProductCategoryEntity> children =
+                categoryRepository.findByParentId(parent.getId());
 
-        return categoryMapper.toDTO(categoryRepository.save(category));
+        for (ProductCategoryEntity child : children) {
+
+            child.setPath(getFullCategoryPath(child));
+
+            updateChildrenPath(child);
+        }
     }
 
     @Transactional
     public CategoryResponseDTO update(Long id, CategoryRequestDTO request) {
-        String name = request.getName().trim();
         ProductCategoryEntity category = getActiveCategory(id);
-        Optional<ProductCategoryEntity> existing = categoryRepository.findByName(name);
+        String oldPublicId = category.getImagePublicId();
+        String newPublicId = request.getImagePublicId();
+        try {
+            String name = request.getName().trim();
+            Optional<ProductCategoryEntity> existing = categoryRepository.findByName(name);
 
-        if (existing.isPresent() && !existing.get().getId().equals(id)) {
-            throw new BadRequestException("Tên danh mục đã tồn tại");
-        }
-
-        boolean parentChanged = false;
-        boolean nameChanged = !category.getName().equals(name);
-
-        if (nameChanged) {
-            category.setSlug(generateUniqueSlug(SlugUtils.generateSlug(name), category.getId()));
-        }
-
-        if (request.getParentId() != null) {
-            if(request.getParentId() == id) {
-                throw new BadRequestException("Danh mục cha bị trùng với dang mục hiện tại");
+            if (existing.isPresent() && !existing.get().getId().equals(id)) {
+                throw new BadRequestException("Tên danh mục đã tồn tại");
             }
 
-            ProductCategoryEntity parentCategory = getActiveCategory(request.getParentId());
-            if (!parentCategory.getId().equals(
-                    category.getParent() != null ? category.getParent().getId() : null
-            )) {
-                category.setParent(parentCategory);
-                parentChanged = true;
+            boolean parentChanged = false;
+            boolean nameChanged = !category.getName().equals(name);
+
+            if (oldPublicId != null && !oldPublicId.equals(newPublicId)) {
+                cloudinaryService.deleteAfterCommit(oldPublicId);
             }
+
+            if (nameChanged) {
+                category.setSlug(generateUniqueSlug(SlugUtils.generateSlug(name), category.getId()));
+            }
+
+            if (request.getParentId() != null) {
+                if(request.getParentId().equals(id)) {
+                    throw new BadRequestException("Danh mục cha bị trùng với dang mục hiện tại");
+                }
+
+                ProductCategoryEntity parentCategory = getActiveCategory(request.getParentId());
+                if (!parentCategory.getId().equals(
+                        category.getParent() != null ? category.getParent().getId() : null
+                )) {
+                    category.setParent(parentCategory);
+                    parentChanged = true;
+                }
+            } else {
+                if (category.getParent() != null) {
+                    category.setParent(null);
+                    parentChanged = true;
+                }
+            }
+
+            category.setName(name);
+            category.setDescription(
+                    Optional.ofNullable(request.getDescription()).orElse("").trim());
+            category.setDisplayOrder(request.getDisplayOrder());
+            category.setImageUrl(request.getImageUrl());
+            category.setImagePublicId(request.getImagePublicId());
+            category.setStatus(request.getStatus());
+            category.setSeoTitle(request.getSeoTitle());
+            category.setSeoKeywords(request.getSeoKeywords());
+            category.setSeoDescription(request.getSeoDescription());
+
+            if (nameChanged || parentChanged) {
+                category.setPath(getFullCategoryPath(category));
+
+                updateChildrenPath(category);
+            }
+
+            log.info("Category {} - '{}' updated", id, category.getName());
+
+            return categoryMapper.toDTO(categoryRepository.save(category));
+        } catch (Exception e) {
+            if (newPublicId != null && !newPublicId.equals(oldPublicId)) {
+                cloudinaryService.deleteImage(newPublicId);
+            }
+            throw e;
         }
-
-        category.setName(name);
-        category.setDescription(
-                Optional.ofNullable(request.getDescription()).orElse("").trim());
-        category.setDisplayOrder(request.getDisplayOrder());
-        category.setImageUrl(request.getImageUrl());
-        category.setStatus(request.getStatus());
-
-        if (nameChanged || parentChanged) {
-            category.setPath(getFullCategoryPath(category));
-        }
-
-        log.info("Category {} - '{}' updated", id, category.getName());
-
-        return categoryMapper.toDTO(categoryRepository.save(category));
     }
 
     @Transactional
@@ -216,7 +255,10 @@ public class ProductCategoryService {
             throw new BadRequestException("Không thể xóa danh mục đang chứa sản phẩm");
         }
 
+        cloudinaryService.deleteAfterCommit(category.getImagePublicId());
         mappingRepository.deleteByCategoryId(id);
+        category.setImageUrl(null);
+        category.setImagePublicId(null);
         category.setParent(null);
         category.setStatus(Status.DELETED);
         category.setPath(null);
@@ -247,9 +289,7 @@ public class ProductCategoryService {
 
         category.setStatus(Status.ACTIVE);
         category.setParent(null);
-
         category.setSlug(generateUniqueSlug(category.getSlug(), category.getId()));
-
         category.setPath(category.getSlug());
 
         log.info("Category {} - '{}' restored", id, category.getName());

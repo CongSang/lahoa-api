@@ -4,6 +4,7 @@ import com.lahoa.lahoa_be.dto.filter.ProductFilterRequestDTO;
 import com.lahoa.lahoa_be.dto.request.ProductRequestDTO;
 import com.lahoa.lahoa_be.dto.response.PagedResponseDTO;
 import com.lahoa.lahoa_be.dto.response.ProductResponseDTO;
+import com.lahoa.lahoa_be.service.CloudinaryService;
 import com.lahoa.lahoa_be.service.ProductService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -11,12 +12,15 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.Map;
+
 @RestController
 @RequestMapping("/products")
 @RequiredArgsConstructor
 public class ProductController {
 
     private final ProductService productService;
+    private final CloudinaryService cloudinaryService;
 
     @GetMapping
     public ResponseEntity<PagedResponseDTO<ProductResponseDTO>> list(
@@ -45,5 +49,10 @@ public class ProductController {
     public ResponseEntity<Void> delete(@PathVariable Long id) {
         productService.delete(id);
         return ResponseEntity.noContent().build();
+    }
+
+    @GetMapping("/upload-signature")
+    public Map<String, Object> getUploadSignature() {
+        return cloudinaryService.generateSignature("lahoa/products");
     }
 }

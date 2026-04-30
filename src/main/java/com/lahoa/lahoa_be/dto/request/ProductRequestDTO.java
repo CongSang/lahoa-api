@@ -26,6 +26,8 @@ public class ProductRequestDTO {
     @Size(max = 1000)
     private String imageUrl;
 
+    private String imagePublicId;
+
     @Size(max = 500, message = "Mô tả tối đa 500 ký tự")
     private String description;
 

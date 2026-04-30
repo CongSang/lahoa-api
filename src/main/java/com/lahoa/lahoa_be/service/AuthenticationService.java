@@ -29,6 +29,7 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.*;
 import java.util.stream.Collectors;
@@ -51,6 +52,7 @@ public class AuthenticationService {
     @Value("${app.activation.url}")
     private String backendURL;
 
+    @Transactional
     public UserResponseDTO registerUser(UserRequestDTO userDTO) {
         if (userRepository.existsByEmail(userDTO.getEmail())) {
             log.warn("<<< Đăng ký thất bại: Email {} đã tồn tại trong hệ thống", userDTO.getEmail());

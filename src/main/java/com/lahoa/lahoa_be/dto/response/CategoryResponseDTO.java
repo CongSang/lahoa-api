@@ -19,6 +19,7 @@ public class CategoryResponseDTO {
     private String path;
     private String description;
     private String imageUrl;
+    private String imagePublicId;
     private Integer displayOrder;
     private Long productCount;
     private Status status;

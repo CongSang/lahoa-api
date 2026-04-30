@@ -41,7 +41,7 @@ public class ProductService {
 
     private final ProductRepository productRepository;
     private final ProductCategoryRepository categoryRepository;
-    private final ProductCategoryMappingRepository mappingRepository;
+    private final CloudinaryService cloudinaryService;
     private final ProductMapper productMapper;
     private final PagedMapper pagedMapper;
     private final ProductCategoryMappingService mappingService;
@@ -142,6 +142,12 @@ public class ProductService {
 
         validate(req);
 
+        if (req.getImagePublicId() != null &&
+                !req.getImagePublicId().equals(product.getImagePublicId())) {
+
+            cloudinaryService.deleteAfterCommit(product.getImagePublicId());
+        }
+
         boolean nameChanged = !product.getName().equals(req.getName().trim());
 
         productMapper.apply(product, req);
@@ -179,6 +185,10 @@ public class ProductService {
     @Transactional
     public void delete(Long id) {
         ProductEntity product = getActiveProduct(id);
+
+        cloudinaryService.deleteAfterCommit(product.getImagePublicId());
+        product.setMainImage(null);
+        product.setImagePublicId(null);
         product.setStatus(Status.DELETED);
         log.info("Soft deleted product id={}", id);
     }

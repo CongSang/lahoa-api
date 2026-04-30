@@ -46,6 +46,8 @@ public interface ProductCategoryRepository extends JpaRepository<ProductCategory
 
     Optional<ProductCategoryEntity> findByName(String name);
 
+    List<ProductCategoryEntity> findByParentId(Long id);
+
     boolean existsByParentId(Long parentId);
 
     List<ProductCategoryEntity> findByParentIsNullOrderByDisplayOrderAsc();

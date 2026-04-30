@@ -20,9 +20,13 @@ public class ProductCategoryMapper {
                 .name(dto.getName().trim())
                 .description(Optional.ofNullable(dto.getDescription()).orElse("").trim())
                 .imageUrl(dto.getImageUrl())
+                .imagePublicId(dto.getImagePublicId())
                 .displayOrder(dto.getDisplayOrder())
                 .slug(slug)
                 .status(dto.getStatus())
+                .seoTitle(dto.getSeoTitle())
+                .seoDescription(dto.getSeoDescription())
+                .seoKeywords(dto.getSeoKeywords())
                 .build();
     }
 
@@ -35,9 +39,13 @@ public class ProductCategoryMapper {
                 .slug(entity.getSlug())
                 .path(entity.getPath())
                 .imageUrl(entity.getImageUrl())
+                .imagePublicId(entity.getImagePublicId())
                 .parent(this.toDTO(entity.getParent()))
                 .displayOrder(entity.getDisplayOrder())
                 .status(entity.getStatus())
+                .seoTitle(entity.getSeoTitle())
+                .seoDescription(entity.getSeoDescription())
+                .seoKeywords(entity.getSeoKeywords())
                 .build();
     }
 

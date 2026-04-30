@@ -31,6 +31,7 @@ public class ProductMapper {
                 .displayOrder(dto.getDisplayOrder())
                 .status(dto.getStatus())
                 .mainImage(dto.getImageUrl())
+                .imagePublicId(dto.getImagePublicId())
                 .build();
     }
 
@@ -51,6 +52,7 @@ public class ProductMapper {
                 .price(p.getBasePrice())
                 .status(p.getStatus())
                 .mainImage(p.getMainImage())
+                .imagePublicId(p.getImagePublicId())
                 .displayOrder(p.getDisplayOrder())
                 .primaryCategory(productCategoryMapper.toDTO(primary.getCategory()))
                 .categories(
@@ -73,6 +75,7 @@ public class ProductMapper {
         product.setDisplayOrder(req.getDisplayOrder());
         product.setStatus(req.getStatus());
         product.setMainImage(req.getImageUrl());
+        product.setImagePublicId(req.getImagePublicId());
 
         product.setSeoTitle(req.getSeoTitle());
         product.setSeoDescription(req.getSeoDescription());
