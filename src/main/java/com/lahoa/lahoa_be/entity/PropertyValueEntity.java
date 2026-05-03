@@ -17,7 +17,8 @@ import lombok.*;
                 )
         }
 )
-@Data
+@Getter
+@Setter
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder

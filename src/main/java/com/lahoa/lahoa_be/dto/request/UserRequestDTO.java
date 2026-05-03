@@ -2,6 +2,7 @@ package com.lahoa.lahoa_be.dto.request;
 
 import com.lahoa.lahoa_be.common.enums.Role;
 import jakarta.validation.constraints.Email;
+import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Pattern;
 import lombok.AllArgsConstructor;
@@ -17,7 +18,7 @@ import java.time.LocalDateTime;
 @Builder
 public class UserRequestDTO {
 
-    @NotNull(message = "Tên không được để trống")
+    @NotBlank(message = "Tên không được để trống")
     private String fullName;
 
     @NotNull(message = "Mật khẩu không được để trống")

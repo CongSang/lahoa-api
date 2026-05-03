@@ -54,7 +54,9 @@ public class ProductMapper {
                 .mainImage(p.getMainImage())
                 .imagePublicId(p.getImagePublicId())
                 .displayOrder(p.getDisplayOrder())
-                .primaryCategory(productCategoryMapper.toDTO(primary.getCategory()))
+                .primaryCategory(primary != null
+                        ? productCategoryMapper.toDTO(primary.getCategory())
+                        : null)
                 .categories(
                         mappings.stream()
                                 .map(m -> productCategoryMapper.toDTO(m.getCategory()))

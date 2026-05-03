@@ -6,19 +6,15 @@ import com.lahoa.lahoa_be.dto.request.ProductRequestDTO;
 import com.lahoa.lahoa_be.dto.response.PagedResponseDTO;
 import com.lahoa.lahoa_be.dto.response.ProductResponseDTO;
 import com.lahoa.lahoa_be.entity.ProductCategoryEntity;
-import com.lahoa.lahoa_be.entity.ProductCategoryId;
-import com.lahoa.lahoa_be.entity.ProductCategoryMappingEntity;
 import com.lahoa.lahoa_be.entity.ProductEntity;
 import com.lahoa.lahoa_be.exception.BadRequestException;
 import com.lahoa.lahoa_be.exception.ResourceNotFoundException;
 import com.lahoa.lahoa_be.mapper.PagedMapper;
 import com.lahoa.lahoa_be.mapper.ProductMapper;
-import com.lahoa.lahoa_be.repository.ProductCategoryMappingRepository;
 import com.lahoa.lahoa_be.repository.ProductCategoryRepository;
 import com.lahoa.lahoa_be.repository.ProductRepository;
 import com.lahoa.lahoa_be.specification.ProductSpecification;
 import com.lahoa.lahoa_be.util.SlugUtils;
-import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
@@ -27,11 +23,10 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
-import java.util.ArrayList;
 import java.util.List;
-import java.util.Optional;
 import java.util.stream.Collectors;
 
 @Slf4j
@@ -82,7 +77,7 @@ public class ProductService {
         }
 
         if (!req.getCategoryIds().contains(req.getPrimaryCategoryId())) {
-            throw new BadRequestException("Primary category không hợp lệ");
+            throw new BadRequestException("Danh mục chính phải nằm trong danh sách danh mục được chọn");
         }
 
         // check category tồn tại & không deleted

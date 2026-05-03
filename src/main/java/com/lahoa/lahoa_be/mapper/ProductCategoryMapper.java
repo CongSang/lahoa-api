@@ -75,7 +75,8 @@ public class ProductCategoryMapper {
     public DropdownResponseDTO toDropdown(ProductCategoryEntity entity) {
         if (entity == null) return null;
         return DropdownResponseDTO.builder()
-                .value(entity.getId())
+                .id(entity.getId())
+                .value(entity.getId().toString())
                 .label(entity.getName())
                 .build();
     }

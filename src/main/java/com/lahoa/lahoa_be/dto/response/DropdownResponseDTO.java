@@ -6,11 +6,10 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 @Data
-@AllArgsConstructor
-@NoArgsConstructor
 @Builder
 public class DropdownResponseDTO {
 
-    private Long value;
+    private Long id;
+    private String value;
     private String label;
 }
