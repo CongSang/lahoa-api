@@ -3,10 +3,7 @@ package com.lahoa.lahoa_be.controller;
 import com.lahoa.lahoa_be.common.enums.Status;
 import com.lahoa.lahoa_be.dto.filter.CategoryFilterRequestDTO;
 import com.lahoa.lahoa_be.dto.request.CategoryRequestDTO;
-import com.lahoa.lahoa_be.dto.response.CategoryEcResponseDTO;
-import com.lahoa.lahoa_be.dto.response.CategoryResponseDTO;
-import com.lahoa.lahoa_be.dto.response.DropdownResponseDTO;
-import com.lahoa.lahoa_be.dto.response.PagedResponseDTO;
+import com.lahoa.lahoa_be.dto.response.*;
 import com.lahoa.lahoa_be.service.CloudinaryService;
 import com.lahoa.lahoa_be.service.ProductCategoryService;
 import jakarta.validation.Valid;
@@ -34,9 +31,14 @@ public class ProductCategoryController {
         return ResponseEntity.ok(categoryService.list(filter));
     }
 
-    @GetMapping("/dropdown")
+    @GetMapping("/dropdown-parent")
     public ResponseEntity<List<DropdownResponseDTO>> getDropdownParent() {
         return ResponseEntity.ok(categoryService.getCategoryParent());
+    }
+
+    @GetMapping("/dropdown")
+    public ResponseEntity<List<ProductPropertyResponseDTO>> getDropdown() {
+        return ResponseEntity.ok(categoryService.getDropdownCategory());
     }
 
     @PostMapping

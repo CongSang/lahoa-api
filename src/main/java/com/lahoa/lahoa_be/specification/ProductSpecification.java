@@ -1,9 +1,8 @@
 package com.lahoa.lahoa_be.specification;
 
-import com.lahoa.lahoa_be.common.enums.Status;
+import com.lahoa.lahoa_be.common.enums.ProductStatus;
 import com.lahoa.lahoa_be.dto.filter.ProductFilterRequestDTO;
 import com.lahoa.lahoa_be.entity.ProductEntity;
-import com.lahoa.lahoa_be.entity.VariantPropertyValueEntity;
 import jakarta.persistence.criteria.*;
 import org.springframework.data.jpa.domain.Specification;
 
@@ -18,6 +17,9 @@ import java.util.*;
 //        "propertyValueIds": {
 //          "1": [10, 11],
 //          "2": [20]
+//        },
+//        "variantPropertyValueIds": {
+//          "1": [10, 11],
 //        }
 // }
 
@@ -31,9 +33,7 @@ public class ProductSpecification {
             // tránh duplicate khi join
             query.distinct(true);
 
-            // =========================
             // 1. KEYWORD
-            // =========================
             if (req.getKeyword() != null && !req.getKeyword().isBlank()) {
                 String keyword = "%" + req.getKeyword().toLowerCase() + "%";
 
@@ -42,9 +42,7 @@ public class ProductSpecification {
                 );
             }
 
-            // =========================
             // 2. STATUS
-            // =========================
             if (req.getStatus() != null) {
                 predicates.add(
                         cb.equal(root.get("status"), req.getStatus())
@@ -52,28 +50,24 @@ public class ProductSpecification {
             } else {
                 // default: exclude DELETED
                 predicates.add(
-                        cb.notEqual(root.get("status"), Status.DELETED)
+                        cb.notEqual(root.get("status"), ProductStatus.DELETED)
                 );
             }
 
-            // =========================
             // 3. PRICE RANGE
-            // =========================
             if (req.getMinPrice() != null) {
                 predicates.add(
-                        cb.greaterThanOrEqualTo(root.get("price"), req.getMinPrice())
+                        cb.greaterThanOrEqualTo(root.get("basePrice"), req.getMinPrice())
                 );
             }
 
             if (req.getMaxPrice() != null) {
                 predicates.add(
-                        cb.lessThanOrEqualTo(root.get("price"), req.getMaxPrice())
+                        cb.lessThanOrEqualTo(root.get("basePrice"), req.getMaxPrice())
                 );
             }
 
-            // =========================
             // 4. CATEGORY FILTER
-            // =========================
             if (req.getCategoryId() != null) {
 
                 Join<Object, Object> mapping = root.join("categoryMappings", JoinType.INNER);
@@ -83,19 +77,18 @@ public class ProductSpecification {
                 );
             }
 
-            // =========================
             // 5. PROPERTY FILTER
-            // =========================
             if (req.getPropertyValueIds() != null && !req.getPropertyValueIds().isEmpty()) {
+                // product → productPropertyValues
+                Join<Object, Object> ppvJoin = root.join("propertyValues", JoinType.INNER);
 
-                /**
-                 * - mỗi property = 1 subquery
-                 * - giữa các property = AND
-                 *
-                 * Ví dụ:
-                 * color IN (red, blue)
-                 * AND size IN (M)
-                 */
+                // ppv → propertyValue
+                Join<Object, Object> valueJoin = ppvJoin.join("propertyValue", JoinType.INNER);
+
+                // propertyValue → property
+                Join<Object, Object> propertyJoin = valueJoin.join("property", JoinType.INNER);
+
+                List<Predicate> orPredicates = new ArrayList<>();
 
                 for (Map.Entry<Long, List<Long>> entry : req.getPropertyValueIds().entrySet()) {
 
@@ -104,27 +97,50 @@ public class ProductSpecification {
 
                     if (valueIds == null || valueIds.isEmpty()) continue;
 
-                    // subquery
-                    Subquery<Long> sub = query.subquery(Long.class);
-                    Root<VariantPropertyValueEntity> subRoot = sub.from(VariantPropertyValueEntity.class);
-
-                    sub.select(
-                            subRoot.get("variant").get("product").get("id")
-                    );
-
-                    Predicate propertyPredicate = cb.and(
-                            cb.equal(subRoot.get("property").get("id"), propertyId),
-                            subRoot.get("value").get("id").in(valueIds)
-                    );
-
-                    sub.where(propertyPredicate);
-
-                    // add AND condition
-                    predicates.add(
-                            root.get("id").in(sub)
+                    // (property = X AND value IN (...))
+                    orPredicates.add(
+                            cb.and(
+                                    cb.equal(propertyJoin.get("id"), propertyId),
+                                    valueJoin.get("id").in(valueIds)
+                            )
                     );
                 }
+
+                // OR tất cả property condition
+                predicates.add(cb.or(orPredicates.toArray(new Predicate[0])));
+
+                // GROUP BY product.id
+                query.groupBy(root.get("id"));
+
+                // HAVING đủ số property
+                query.having(
+                        cb.equal(
+                                cb.countDistinct(propertyJoin.get("id")),
+                                req.getPropertyValueIds().size()
+                        )
+                );
             }
+
+//            if (req.getVariantPropertyValueIds() != null && !req.getVariantPropertyValueIds().isEmpty()) {
+//
+//                Subquery<Long> sub = query.subquery(Long.class);
+//
+//                Root<VariantPropertyValueEntity> subRoot = sub.from(VariantPropertyValueEntity.class);
+//
+//                Join<?, ?> variantJoin = subRoot.join("variant");
+//                Join<?, ?> valueJoin = subRoot.join("propertyValue");
+//
+//                sub.select(variantJoin.get("product").get("id"));
+//
+//                sub.where(
+//                        cb.and(
+//                                cb.equal(variantJoin.get("product").get("id"), root.get("id")),
+//                                valueJoin.get("id").in(req.getVariantPropertyValueIds())
+//                        )
+//                );
+//
+//                predicates.add(cb.exists(sub));
+//            }
 
             return cb.and(predicates.toArray(new Predicate[0]));
         };

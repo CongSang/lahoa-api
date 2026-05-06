@@ -3,10 +3,7 @@ package com.lahoa.lahoa_be.service;
 import com.lahoa.lahoa_be.common.enums.Status;
 import com.lahoa.lahoa_be.dto.filter.CategoryFilterRequestDTO;
 import com.lahoa.lahoa_be.dto.request.CategoryRequestDTO;
-import com.lahoa.lahoa_be.dto.response.CategoryEcResponseDTO;
-import com.lahoa.lahoa_be.dto.response.CategoryResponseDTO;
-import com.lahoa.lahoa_be.dto.response.DropdownResponseDTO;
-import com.lahoa.lahoa_be.dto.response.PagedResponseDTO;
+import com.lahoa.lahoa_be.dto.response.*;
 import com.lahoa.lahoa_be.entity.ProductCategoryEntity;
 import com.lahoa.lahoa_be.exception.BadRequestException;
 import com.lahoa.lahoa_be.exception.ResourceNotFoundException;
@@ -96,6 +93,14 @@ public class ProductCategoryService {
         return rootCategories.stream().map(categoryMapper::toDropdown).collect(Collectors.toList());
     }
 
+    public List<ProductPropertyResponseDTO> getDropdownCategory() {
+        List<ProductCategoryEntity> categories = categoryRepository.findAllByStatusOrderByDisplayOrderAsc(Status.ACTIVE);
+        return categories.stream()
+                .filter(cat -> cat.getParent() == null)
+                .map(cat -> categoryMapper.toTreeDropdown(cat, categories))
+                .collect(Collectors.toList());
+    }
+
     // EC: Lấy chi tiết
     public CategoryEcResponseDTO getBySlug(String slug) {
         ProductCategoryEntity response = categoryRepository.findBySlug(slug)
@@ -147,9 +152,11 @@ public class ProductCategoryService {
 
             category.setPath(getFullCategoryPath(category));
 
-            log.info("Category {} created", category.getName());
+            ProductCategoryEntity saved = categoryRepository.save(category);
 
-            return categoryMapper.toDTO(categoryRepository.save(category));
+            log.info("Created Category id={}", saved.getId());
+
+            return categoryMapper.toDTO(saved);
         } catch (Exception e) {
             if (request.getImagePublicId() != null) {
                 cloudinaryService.deleteImage(request.getImagePublicId());
@@ -231,7 +238,7 @@ public class ProductCategoryService {
                 updateChildrenPath(category);
             }
 
-            log.info("Category {} - '{}' updated", id, category.getName());
+            log.info("Updated Category id={}", id);
 
             return categoryMapper.toDTO(categoryRepository.save(category));
         } catch (Exception e) {
@@ -262,7 +269,7 @@ public class ProductCategoryService {
         category.setStatus(Status.DELETED);
         category.setPath(null);
 
-        log.info("Category {} - '{}' marked as DELETED", id, category.getName());
+        log.info("Soft deleted Category id={}", id);
     }
 
     private String generateUniqueSlug(String base, Long excludeId) {
@@ -291,7 +298,7 @@ public class ProductCategoryService {
         category.setSlug(generateUniqueSlug(category.getSlug(), category.getId()));
         category.setPath(category.getSlug());
 
-        log.info("Category {} - '{}' restored", id, category.getName());
+        log.info("Restored Category id={}", id);
 
         return categoryMapper.toDTO(category);
     }
@@ -302,6 +309,6 @@ public class ProductCategoryService {
                 .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy danh mục cần cập nhật"));
         category.setStatus(status);
 
-        log.info("Category {} - '{}' mark as {}", id, category.getName(), status);
+        log.info("Changed status Category id={} to {}", id, status);
     }
 }

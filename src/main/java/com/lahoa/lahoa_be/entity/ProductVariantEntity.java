@@ -1,6 +1,7 @@
 package com.lahoa.lahoa_be.entity;
 
 import com.lahoa.lahoa_be.common.enums.Status;
+import com.lahoa.lahoa_be.common.enums.VariantStatus;
 import jakarta.persistence.*;
 import lombok.*;
 
@@ -32,10 +33,8 @@ public class ProductVariantEntity extends BaseEntity {
 
     private BigDecimal price;
 
-    private Integer stockQuantity;
-
     @Enumerated(EnumType.STRING)
-    private Status status;
+    private VariantStatus status = VariantStatus.ACTIVE;
 
     @Column(name = "is_default")
     private boolean isDefault;

@@ -1,5 +1,6 @@
 package com.lahoa.lahoa_be.dto.filter;
 
+import com.lahoa.lahoa_be.common.enums.ProductStatus;
 import com.lahoa.lahoa_be.common.enums.Status;
 import com.lahoa.lahoa_be.dto.request.PagedRequestDTO;
 import lombok.Data;
@@ -19,7 +20,8 @@ public class ProductFilterRequestDTO extends PagedRequestDTO {
     private BigDecimal minPrice;
     private BigDecimal maxPrice;
 
-    private Status status;
+    private ProductStatus status;
 
     private Map<Long, List<Long>> propertyValueIds;
+//    private Map<Long, List<Long>> variantPropertyValueIds;
 }

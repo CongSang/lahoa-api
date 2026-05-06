@@ -1,5 +1,6 @@
 package com.lahoa.lahoa_be.dto.request;
 
+import com.lahoa.lahoa_be.common.enums.ProductStatus;
 import com.lahoa.lahoa_be.common.enums.Status;
 import jakarta.validation.constraints.NotNull;
 import lombok.Data;
@@ -40,7 +41,7 @@ public class ProductRequestDTO {
     private List<@NotNull(message = "CategoryId không hợp lệ") Long> categoryIds;
 
     @NotNull(message = "Trạng thái không được để trống")
-    private Status status;
+    private ProductStatus status;
 
     private Integer displayOrder;
 
@@ -55,4 +56,7 @@ public class ProductRequestDTO {
 
     @Size(max = 255, message = "SEO keywords tối đa 255 ký tự")
     private String seoKeywords;
+
+    private List<Long> propertyValueIds;
+    private List<VariantRequestDTO> variants;
 }

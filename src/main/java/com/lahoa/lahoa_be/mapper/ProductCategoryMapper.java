@@ -4,6 +4,7 @@ import com.lahoa.lahoa_be.dto.request.CategoryRequestDTO;
 import com.lahoa.lahoa_be.dto.response.CategoryEcResponseDTO;
 import com.lahoa.lahoa_be.dto.response.CategoryResponseDTO;
 import com.lahoa.lahoa_be.dto.response.DropdownResponseDTO;
+import com.lahoa.lahoa_be.dto.response.ProductPropertyResponseDTO;
 import com.lahoa.lahoa_be.entity.ProductCategoryEntity;
 import org.springframework.stereotype.Component;
 
@@ -78,6 +79,18 @@ public class ProductCategoryMapper {
                 .id(entity.getId())
                 .value(entity.getId().toString())
                 .label(entity.getName())
+                .build();
+    }
+
+    public ProductPropertyResponseDTO toTreeDropdown(ProductCategoryEntity category, List<ProductCategoryEntity> allCategories) {
+        return ProductPropertyResponseDTO.builder()
+                .id(category.getId())
+                .name(category.getName())
+                .code(category.getSlug())
+                .values(allCategories.stream()
+                        .filter(cat -> cat.getParent() != null && cat.getParent().getId().equals(category.getId()))
+                        .map(this::toDropdown)
+                        .collect(Collectors.toList()))
                 .build();
     }
 }

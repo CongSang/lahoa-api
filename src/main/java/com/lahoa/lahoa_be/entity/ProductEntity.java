@@ -1,6 +1,6 @@
 package com.lahoa.lahoa_be.entity;
 
-import com.lahoa.lahoa_be.common.enums.Status;
+import com.lahoa.lahoa_be.common.enums.ProductStatus;
 import jakarta.persistence.*;
 import lombok.*;
 import org.hibernate.annotations.SQLDelete;
@@ -47,7 +47,7 @@ public class ProductEntity extends BaseEntity {
     private String imagePublicId;
 
     @Enumerated(EnumType.STRING)
-    private Status status;
+    private ProductStatus status = ProductStatus.DRAFT;
 
     private Integer displayOrder = 0;
 

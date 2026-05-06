@@ -3,9 +3,8 @@ package com.lahoa.lahoa_be.mapper;
 import com.lahoa.lahoa_be.dto.request.CategoryRequestDTO;
 import com.lahoa.lahoa_be.dto.request.ProductRequestDTO;
 import com.lahoa.lahoa_be.dto.response.ProductResponseDTO;
-import com.lahoa.lahoa_be.entity.ProductCategoryEntity;
-import com.lahoa.lahoa_be.entity.ProductCategoryMappingEntity;
-import com.lahoa.lahoa_be.entity.ProductEntity;
+import com.lahoa.lahoa_be.dto.response.VariantResponseDTO;
+import com.lahoa.lahoa_be.entity.*;
 import com.lahoa.lahoa_be.repository.ProductCategoryMappingRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
@@ -19,6 +18,8 @@ public class ProductMapper {
 
     private final ProductCategoryMapper productCategoryMapper;
     private final ProductCategoryMappingRepository mappingRepository;
+    private final PropertyMapper propertyMapper;
+    private final VariantMapper variantMapper;
 
     public ProductEntity toEntity(ProductRequestDTO dto) {
         if (dto == null) return null;
@@ -35,7 +36,11 @@ public class ProductMapper {
                 .build();
     }
 
-    public ProductResponseDTO toDTO(ProductEntity p) {
+    public ProductResponseDTO toDTO(
+            ProductEntity p,
+            List<ProductVariantEntity> variants,
+            List<ProductPropertyValueEntity> productPropertyValue
+    ) {
 
         List<ProductCategoryMappingEntity> mappings = mappingRepository.findByProductId(p.getId());
 
@@ -43,6 +48,10 @@ public class ProductMapper {
                 .filter(ProductCategoryMappingEntity::getIsPrimary)
                 .findFirst()
                 .orElse(null);
+
+        List<VariantResponseDTO> variantDTOs = variants.stream().map(
+                variantMapper::toDTO
+        ).toList();
 
         return ProductResponseDTO.builder()
                 .id(p.getId())
@@ -62,6 +71,8 @@ public class ProductMapper {
                                 .map(m -> productCategoryMapper.toDTO(m.getCategory()))
                                 .toList()
                 )
+                .properties(propertyMapper.toProductPropertyDTO(productPropertyValue))
+                .variants(variantDTOs)
                 .seoTitle(p.getSeoTitle())
                 .seoDescription(p.getSeoDescription())
                 .seoKeywords(p.getSeoKeywords())

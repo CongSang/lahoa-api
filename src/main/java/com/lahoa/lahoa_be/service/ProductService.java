@@ -1,5 +1,6 @@
 package com.lahoa.lahoa_be.service;
 
+import com.lahoa.lahoa_be.common.enums.ProductStatus;
 import com.lahoa.lahoa_be.common.enums.Status;
 import com.lahoa.lahoa_be.dto.filter.ProductFilterRequestDTO;
 import com.lahoa.lahoa_be.dto.request.ProductRequestDTO;
@@ -7,14 +8,19 @@ import com.lahoa.lahoa_be.dto.response.PagedResponseDTO;
 import com.lahoa.lahoa_be.dto.response.ProductResponseDTO;
 import com.lahoa.lahoa_be.entity.ProductCategoryEntity;
 import com.lahoa.lahoa_be.entity.ProductEntity;
+import com.lahoa.lahoa_be.entity.ProductPropertyValueEntity;
+import com.lahoa.lahoa_be.entity.ProductVariantEntity;
 import com.lahoa.lahoa_be.exception.BadRequestException;
 import com.lahoa.lahoa_be.exception.ResourceNotFoundException;
 import com.lahoa.lahoa_be.mapper.PagedMapper;
 import com.lahoa.lahoa_be.mapper.ProductMapper;
 import com.lahoa.lahoa_be.repository.ProductCategoryRepository;
+import com.lahoa.lahoa_be.repository.ProductPropertyValueRepository;
 import com.lahoa.lahoa_be.repository.ProductRepository;
+import com.lahoa.lahoa_be.repository.VariantRepository;
 import com.lahoa.lahoa_be.specification.ProductSpecification;
 import com.lahoa.lahoa_be.util.SlugUtils;
+import com.lahoa.lahoa_be.util.SnowflakeIdGenerator;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
@@ -27,6 +33,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 @Slf4j
@@ -36,10 +43,15 @@ public class ProductService {
 
     private final ProductRepository productRepository;
     private final ProductCategoryRepository categoryRepository;
+    private final VariantRepository variantRepository;
+    private final ProductPropertyValueRepository productPropertyValueRepository;
     private final CloudinaryService cloudinaryService;
     private final ProductMapper productMapper;
     private final PagedMapper pagedMapper;
     private final ProductCategoryMappingService mappingService;
+    private final PropertyService propertyService;
+    private final VariantService variantService;
+    private final SnowflakeIdGenerator idGenerator;
 
     public PagedResponseDTO<ProductResponseDTO> list(ProductFilterRequestDTO filter) {
         Specification<ProductEntity> spec = ProductSpecification.filter(filter);
@@ -56,8 +68,35 @@ public class ProductService {
 
         Page<ProductEntity> productsPaged = productRepository.findAll(spec, pageable);
 
-        List<ProductResponseDTO> content = productsPaged.getContent().stream()
-                .map(productMapper::toDTO)
+        List<Long> ids = productsPaged.getContent().stream()
+                .map(ProductEntity::getId)
+                .toList();
+
+        if (ids.isEmpty()) {
+            return pagedMapper.toDTO(productsPaged, List.of());
+        }
+
+        List<ProductEntity> products = productRepository.findProductsWithCategories(ids);
+
+        List<ProductVariantEntity> variants = variantRepository.findVariantsByProductIds(ids);
+
+        List<ProductPropertyValueEntity> props =
+                productPropertyValueRepository.findPropertiesByProductIds(ids);
+
+        Map<Long, List<ProductPropertyValueEntity>> propertyMap =
+                props.stream().collect(Collectors.groupingBy(
+                        p -> p.getProduct().getId()
+                ));
+
+        Map<Long, List<ProductVariantEntity>> variantMap = variants.stream()
+                .collect(Collectors.groupingBy(v -> v.getProduct().getId()));
+
+        List<ProductResponseDTO> content = products.stream()
+                .map(p -> productMapper.toDTO(
+                        p,
+                        variantMap.getOrDefault(p.getId(), List.of()),
+                        propertyMap.getOrDefault(p.getId(), List.of())
+                ))
                 .collect(Collectors.toList());
 
         return pagedMapper.toDTO(productsPaged, content);
@@ -96,6 +135,15 @@ public class ProductService {
         }
     }
 
+    private ProductResponseDTO buildResponse(Long productId) {
+        ProductEntity full = productRepository.findProductCore(productId).orElseThrow();
+        List<ProductVariantEntity> variants =
+                variantRepository.findVariantsByProductId(productId);
+        List<ProductPropertyValueEntity> productPropertyValue =
+                productPropertyValueRepository.findPropertiesByProductId(productId);
+        return productMapper.toDTO(full, variants, productPropertyValue);
+    }
+
     private String generateUniqueSlug(String base, Long excludeId) {
         String slug = base;
         int i = 1;
@@ -119,15 +167,19 @@ public class ProductService {
                 null
         ));
 
-        product.setStatus(Status.ACTIVE);
+        Long id = idGenerator.nextId();
+        product.setId(id);
+        product.setStatus(ProductStatus.ACTIVE);
 
         ProductEntity saved = productRepository.save(product);
 
         mappingService.syncCategories(saved, req);
+        propertyService.syncProductProperties(product, req);
+        variantService.syncVariants(product, req);
 
-        log.info("Created product id={}", saved.getId());
+        log.info("Created Product id={}", saved.getId());
 
-        return productMapper.toDTO(saved);
+        return buildResponse(saved.getId());
     }
 
     @Transactional
@@ -157,24 +209,33 @@ public class ProductService {
         ProductEntity saved = productRepository.save(product);
 
         mappingService.syncCategories(saved, req);
+        propertyService.syncProductProperties(product, req);
+        variantService.syncVariants(product, req);
 
-        log.info("Updated product id={}", saved.getId());
+        log.info("Updated Product id={}", saved.getId());
 
-        return productMapper.toDTO(saved);
+        return buildResponse(saved.getId());
     }
 
     private ProductEntity getActiveProduct(Long id) {
         return productRepository.findById(id)
-                .filter(p -> p.getStatus() != Status.DELETED)
+                .filter(p -> p.getStatus() != ProductStatus.DELETED)
                 .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy sản phẩm"));
     }
 
     public ProductResponseDTO getBySlug(String slug) {
-        ProductEntity product = productRepository.findBySlug(slug)
-                .filter(pr -> pr.getStatus() != Status.DELETED)
+        ProductEntity product = productRepository.findBySlugWithCore(slug)
+                .filter(pr -> pr.getStatus() != ProductStatus.DELETED)
                 .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy sản phẩm"));
 
-        return productMapper.toDTO(product);
+        List<ProductVariantEntity> variants =
+                variantRepository.findVariantsByProductId(product.getId());
+
+
+        List<ProductPropertyValueEntity> productPropertyValue =
+                productPropertyValueRepository.findPropertiesByProductId(product.getId());
+
+        return productMapper.toDTO(product, variants, productPropertyValue);
     }
 
     @Transactional
@@ -184,7 +245,7 @@ public class ProductService {
         cloudinaryService.deleteAfterCommit(product.getImagePublicId());
         product.setMainImage(null);
         product.setImagePublicId(null);
-        product.setStatus(Status.DELETED);
-        log.info("Soft deleted product id={}", id);
+        product.setStatus(ProductStatus.DELETED);
+        log.info("Soft deleted Product id={}", id);
     }
 }
