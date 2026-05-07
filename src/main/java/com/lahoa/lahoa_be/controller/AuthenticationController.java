@@ -27,13 +27,13 @@ public class AuthenticationController {
     @PostMapping("/register")
     public ResponseEntity<UserResponseDTO> register(@Valid @RequestBody UserRequestDTO userDTO) {
         log.info(">>> Yêu cầu đăng ký tài khoản: Email: {}", userDTO.getEmail());
-        UserResponseDTO registeredUser = authService.registerUser(userDTO);
+        UserResponseDTO registeredUser = authService.register(userDTO);
         return ResponseEntity.status(HttpStatus.CREATED).body(registeredUser);
     }
 
     @GetMapping("/activate")
     public ResponseEntity<String> activate(@RequestParam String token) {
-        boolean isActivated = authService.activateUser(token);
+        boolean isActivated = authService.activate(token);
 
         if(isActivated) {
             return ResponseEntity.ok("Profile activated successfully");

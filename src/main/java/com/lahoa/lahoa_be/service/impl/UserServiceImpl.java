@@ -1,11 +1,11 @@
-package com.lahoa.lahoa_be.service;
+package com.lahoa.lahoa_be.service.impl;
 
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 @Service
 @RequiredArgsConstructor
-public class UserService {
+public class UserServiceImpl {
 
 
 }

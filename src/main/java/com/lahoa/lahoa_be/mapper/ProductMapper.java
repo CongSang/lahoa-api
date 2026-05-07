@@ -1,6 +1,5 @@
 package com.lahoa.lahoa_be.mapper;
 
-import com.lahoa.lahoa_be.dto.request.CategoryRequestDTO;
 import com.lahoa.lahoa_be.dto.request.ProductRequestDTO;
 import com.lahoa.lahoa_be.dto.response.ProductResponseDTO;
 import com.lahoa.lahoa_be.dto.response.VariantResponseDTO;

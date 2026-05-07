@@ -2,9 +2,7 @@ package com.lahoa.lahoa_be.mapper;
 
 import com.lahoa.lahoa_be.dto.response.DropdownResponseDTO;
 import com.lahoa.lahoa_be.dto.response.ProductPropertyResponseDTO;
-import com.lahoa.lahoa_be.entity.ProductEntity;
 import com.lahoa.lahoa_be.entity.ProductPropertyValueEntity;
-import com.lahoa.lahoa_be.entity.PropertyValueEntity;
 import org.springframework.stereotype.Component;
 
 import java.util.List;

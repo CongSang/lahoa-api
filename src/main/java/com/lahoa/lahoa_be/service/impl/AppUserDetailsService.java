@@ -1,10 +1,9 @@
-package com.lahoa.lahoa_be.service;
+package com.lahoa.lahoa_be.service.impl;
 
 import com.lahoa.lahoa_be.securiry.UserPrincipal;
 import com.lahoa.lahoa_be.entity.UserEntity;
 import com.lahoa.lahoa_be.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
-import org.jspecify.annotations.NullMarked;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
@@ -16,7 +15,6 @@ public class AppUserDetailsService implements UserDetailsService {
 
     private final UserRepository userRepository;
 
-    @NullMarked
     @Override
     public UserDetails loadUserByUsername(String email) throws UsernameNotFoundException {
         UserEntity user = userRepository.findByEmail(email)

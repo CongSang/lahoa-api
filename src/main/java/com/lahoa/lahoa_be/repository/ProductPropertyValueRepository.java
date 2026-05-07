@@ -1,7 +1,6 @@
 package com.lahoa.lahoa_be.repository;
 
 import com.lahoa.lahoa_be.entity.ProductPropertyValueEntity;
-import com.lahoa.lahoa_be.entity.PropertyValueEntity;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;

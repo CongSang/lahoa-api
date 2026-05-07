@@ -1,15 +1,9 @@
 package com.lahoa.lahoa_be.mapper;
 
 import com.lahoa.lahoa_be.dto.response.DropdownResponseDTO;
-import com.lahoa.lahoa_be.dto.response.ProductPropertyResponseDTO;
 import com.lahoa.lahoa_be.dto.response.VariantResponseDTO;
-import com.lahoa.lahoa_be.entity.ProductEntity;
 import com.lahoa.lahoa_be.entity.ProductVariantEntity;
 import org.springframework.stereotype.Component;
-
-import java.util.Collections;
-import java.util.List;
-import java.util.stream.Collectors;
 
 @Component
 public class VariantMapper {

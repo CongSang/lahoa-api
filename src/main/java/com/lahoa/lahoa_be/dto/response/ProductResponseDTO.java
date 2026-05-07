@@ -1,6 +1,9 @@
 package com.lahoa.lahoa_be.dto.response;
 
+import com.fasterxml.jackson.databind.annotation.JsonSerialize;
+import com.fasterxml.jackson.databind.ser.std.ToStringSerializer;
 import com.lahoa.lahoa_be.common.enums.ProductStatus;
+import com.lahoa.lahoa_be.util.BigDecimalPlainSerializer;
 import lombok.Builder;
 import lombok.Data;
 
@@ -11,10 +14,13 @@ import java.util.List;
 @Builder
 public class ProductResponseDTO {
 
+    @JsonSerialize(using = ToStringSerializer.class)
     private Long id;
     private String name;
     private String slug;
     private String description;
+
+    @JsonSerialize(using = BigDecimalPlainSerializer.class)
     private BigDecimal price;
     private String mainImage;
     private String imagePublicId;

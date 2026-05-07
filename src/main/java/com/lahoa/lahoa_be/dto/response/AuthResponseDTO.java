@@ -1,6 +1,5 @@
 package com.lahoa.lahoa_be.dto.response;
 
-import com.lahoa.lahoa_be.dto.request.UserRequestDTO;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;

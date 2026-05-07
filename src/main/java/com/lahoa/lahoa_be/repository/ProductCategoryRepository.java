@@ -2,7 +2,7 @@ package com.lahoa.lahoa_be.repository;
 
 import com.lahoa.lahoa_be.common.enums.Status;
 import com.lahoa.lahoa_be.entity.ProductCategoryEntity;
-import org.jspecify.annotations.NullMarked;
+import jakarta.annotation.Nonnull;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.EntityGraph;
@@ -41,8 +41,7 @@ public interface ProductCategoryRepository extends JpaRepository<ProductCategory
 
     Optional<ProductCategoryEntity> findBySlug(String slug);
 
-    @NullMarked
-    Optional<ProductCategoryEntity> findById(Long id);
+    Optional<ProductCategoryEntity> findById(@Nonnull Long id);
 
     Optional<ProductCategoryEntity> findByName(String name);
 

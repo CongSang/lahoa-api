@@ -1,6 +1,5 @@
 package com.lahoa.lahoa_be.entity;
 
-import com.lahoa.lahoa_be.common.enums.Status;
 import com.lahoa.lahoa_be.common.enums.VariantStatus;
 import jakarta.persistence.*;
 import lombok.*;

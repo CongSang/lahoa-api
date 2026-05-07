@@ -1,6 +1,5 @@
 package com.lahoa.lahoa_be.dto.request;
 
-import com.lahoa.lahoa_be.common.enums.VariantStatus;
 import lombok.Data;
 
 import java.math.BigDecimal;

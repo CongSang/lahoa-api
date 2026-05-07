@@ -1,8 +1,8 @@
 package com.lahoa.lahoa_be.config;
 
-import com.lahoa.lahoa_be.service.AppUserDetailsService;
-import com.lahoa.lahoa_be.service.CustomOAuth2UserService;
-import com.lahoa.lahoa_be.service.CustomOidcUserService;
+import com.lahoa.lahoa_be.service.impl.AppUserDetailsService;
+import com.lahoa.lahoa_be.service.impl.CustomOAuth2UserService;
+import com.lahoa.lahoa_be.service.impl.CustomOidcUserService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
@@ -45,7 +45,7 @@ public class SecurityConfig {
     private String frontendURL;
 
     @Bean
-    public SecurityFilterChain securityFilterChain(HttpSecurity httpSecurity) {
+    public SecurityFilterChain securityFilterChain(HttpSecurity httpSecurity) throws Exception {
         httpSecurity.cors(cors -> cors.configurationSource(corsConfigurationSource()))
                 .csrf(AbstractHttpConfigurer::disable)
                 .exceptionHandling(exception -> exception

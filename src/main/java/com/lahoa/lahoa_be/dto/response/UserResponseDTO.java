@@ -1,12 +1,12 @@
 package com.lahoa.lahoa_be.dto.response;
 
-import com.lahoa.lahoa_be.common.enums.Role;
+import com.fasterxml.jackson.databind.annotation.JsonSerialize;
+import com.fasterxml.jackson.databind.ser.std.ToStringSerializer;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
-import java.time.LocalDateTime;
 import java.util.Set;
 
 @Data
@@ -15,6 +15,8 @@ import java.util.Set;
 @Builder
 public class UserResponseDTO {
 
+    @JsonSerialize(using = ToStringSerializer.class)
+    private Long id;
     private String fullName;
     private String email;
     private String phone;

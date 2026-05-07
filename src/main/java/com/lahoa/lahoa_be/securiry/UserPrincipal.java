@@ -4,7 +4,6 @@ import com.lahoa.lahoa_be.common.enums.Status;
 import com.lahoa.lahoa_be.entity.UserEntity;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-import org.jspecify.annotations.NullMarked;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
@@ -17,7 +16,6 @@ import java.io.Serializable;
 import java.util.*;
 
 @Data
-@NullMarked
 @NoArgsConstructor
 public class UserPrincipal implements UserDetails, OidcUser, OAuth2User, Serializable {
 

@@ -1,7 +1,6 @@
 package com.lahoa.lahoa_be.dto.request;
 
 import com.lahoa.lahoa_be.common.enums.ProductStatus;
-import com.lahoa.lahoa_be.common.enums.Status;
 import jakarta.validation.constraints.NotNull;
 import lombok.Data;
 

@@ -1,7 +1,6 @@
-package com.lahoa.lahoa_be.service;
+package com.lahoa.lahoa_be.service.impl;
 
 import com.lahoa.lahoa_be.common.enums.AuthProvider;
-import com.lahoa.lahoa_be.common.enums.Role;
 import com.lahoa.lahoa_be.common.enums.Status;
 import com.lahoa.lahoa_be.entity.RoleEntity;
 import com.lahoa.lahoa_be.entity.UserEntity;
@@ -10,7 +9,6 @@ import com.lahoa.lahoa_be.repository.UserRepository;
 import com.lahoa.lahoa_be.securiry.UserPrincipal;
 import com.lahoa.lahoa_be.util.SnowflakeIdGenerator;
 import lombok.RequiredArgsConstructor;
-import org.springframework.context.annotation.Lazy;
 import org.springframework.security.oauth2.client.userinfo.DefaultOAuth2UserService;
 import org.springframework.security.oauth2.client.userinfo.OAuth2UserRequest;
 import org.springframework.security.oauth2.core.OAuth2AuthenticationException;
