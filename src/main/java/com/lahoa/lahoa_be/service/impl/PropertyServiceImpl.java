@@ -4,13 +4,16 @@ import com.lahoa.lahoa_be.dto.request.ProductRequestDTO;
 import com.lahoa.lahoa_be.dto.response.DropdownResponseDTO;
 import com.lahoa.lahoa_be.dto.response.ProductPropertyResponseDTO;
 import com.lahoa.lahoa_be.entity.*;
+import com.lahoa.lahoa_be.repository.ProductPropertyValueRepository;
 import com.lahoa.lahoa_be.repository.PropertyRepository;
 import com.lahoa.lahoa_be.repository.PropertyValueRepository;
+import com.lahoa.lahoa_be.repository.VariantPropertyValueRepository;
 import com.lahoa.lahoa_be.service.PropertyService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.Comparator;
 import java.util.List;
 import java.util.Optional;
 
@@ -20,7 +23,10 @@ public class PropertyServiceImpl implements PropertyService {
 
     private final PropertyRepository propertyRepository;
     private final PropertyValueRepository propertyValueRepository;
+    private final ProductPropertyValueRepository productPropertyValueRepository;
+    private final VariantPropertyValueRepository variantPropertyValueRepository;
 
+    @Override
     public List<ProductPropertyResponseDTO> getProperties(boolean isFilterable) {
         List<PropertyEntity> properties = propertyRepository.findByFilterable(isFilterable);
 
@@ -31,6 +37,9 @@ public class PropertyServiceImpl implements PropertyService {
                         .name(p.getName())
                         .values(
                                 p.getValues().stream()
+                                        .sorted(Comparator.comparing(
+                                                PropertyValueEntity::getId
+                                        ))
                                         .map(v -> DropdownResponseDTO.builder()
                                                 .id(v.getId())
                                                 .value(v.getValue())
@@ -44,14 +53,15 @@ public class PropertyServiceImpl implements PropertyService {
                 .toList();
     }
 
+    @Override
     @Transactional
     public void syncProductProperties(ProductEntity product, ProductRequestDTO req) {
 
         List<Long> newIds = Optional.ofNullable(req.getPropertyValueIds())
                 .orElse(List.of());
 
-        // clear old
         product.getPropertyValues().clear();
+        productPropertyValueRepository.flush();
 
         if (newIds.isEmpty()) return;
 
@@ -68,9 +78,12 @@ public class PropertyServiceImpl implements PropertyService {
         product.getPropertyValues().addAll(newList);
     }
 
+    @Override
+    @Transactional
     public void syncVariantProperties(ProductVariantEntity variant, List<Long> valueIds) {
 
         variant.getPropertyValues().clear();
+        variantPropertyValueRepository.flush();
 
         if (valueIds == null || valueIds.isEmpty()) return;
 

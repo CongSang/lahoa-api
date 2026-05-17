@@ -4,7 +4,6 @@ import lombok.Getter;
 
 @Getter
 public enum ProductStatus {
-    DRAFT("Bản nháp"),
     ACTIVE("Hoạt động"),
     INACTIVE("Không hoạt động"),
     DELETED("Đã xóa");

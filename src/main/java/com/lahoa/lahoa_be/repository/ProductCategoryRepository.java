@@ -39,19 +39,21 @@ public interface ProductCategoryRepository extends JpaRepository<ProductCategory
             @Param("parentId") Long parentId,
             Pageable pageable);
 
-    Optional<ProductCategoryEntity> findBySlug(String slug);
+    Optional<ProductCategoryEntity> findBySlugAndStatus(String slug, Status status);
 
     Optional<ProductCategoryEntity> findById(@Nonnull Long id);
 
-    Optional<ProductCategoryEntity> findByName(String name);
+    boolean existsByNameAndStatusNot(String name, Status status);
+
+    boolean existsByNameAndIdNotAndStatusNot(String name, Long id, Status status);
 
     List<ProductCategoryEntity> findByParentId(Long id);
 
     boolean existsByParentId(Long parentId);
 
-    List<ProductCategoryEntity> findByParentIsNullOrderByDisplayOrderAsc();
+    List<ProductCategoryEntity> findByParentIsNullAndStatusNot(Status status);
 
-    List<ProductCategoryEntity> findAllByStatusOrderByDisplayOrderAsc(Status status);
+    List<ProductCategoryEntity> findAllByStatus(Status status);
 
     @Query("""
         SELECT c.id

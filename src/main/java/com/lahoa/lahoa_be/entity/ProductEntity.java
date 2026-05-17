@@ -47,7 +47,7 @@ public class ProductEntity extends BaseEntity {
     private String imagePublicId;
 
     @Enumerated(EnumType.STRING)
-    private ProductStatus status = ProductStatus.DRAFT;
+    private ProductStatus status = ProductStatus.ACTIVE;
 
     private Integer displayOrder = 0;
 

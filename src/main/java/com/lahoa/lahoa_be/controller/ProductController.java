@@ -1,11 +1,13 @@
 package com.lahoa.lahoa_be.controller;
 
+import com.lahoa.lahoa_be.common.enums.ProductStatus;
 import com.lahoa.lahoa_be.dto.filter.ProductFilterRequestDTO;
 import com.lahoa.lahoa_be.dto.request.ProductRequestDTO;
 import com.lahoa.lahoa_be.dto.response.PagedResponseDTO;
 import com.lahoa.lahoa_be.dto.response.ProductResponseDTO;
 import com.lahoa.lahoa_be.service.CloudinaryService;
 import com.lahoa.lahoa_be.service.ProductService;
+import com.lahoa.lahoa_be.service.VariantService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -20,6 +22,7 @@ import java.util.Map;
 public class ProductController {
 
     private final ProductService productService;
+    private final VariantService variantService;
     private final CloudinaryService cloudinaryService;
 
     @GetMapping
@@ -40,15 +43,33 @@ public class ProductController {
         return ResponseEntity.ok(productService.update(id, request));
     }
 
-    @GetMapping("/{slug}")
-    public ResponseEntity<ProductResponseDTO> get(@PathVariable String slug) {
+    @GetMapping("/slug/{slug}")
+    public ResponseEntity<ProductResponseDTO> getBySlug(@PathVariable String slug) {
         return ResponseEntity.ok(productService.getBySlug(slug));
+    }
+
+    @GetMapping("/{id}")
+    public ResponseEntity<ProductResponseDTO> getById(@PathVariable Long id) {
+        return ResponseEntity.ok(productService.getById(id));
     }
 
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> delete(@PathVariable Long id) {
         productService.delete(id);
         return ResponseEntity.noContent().build();
+    }
+
+    @PutMapping("/{id}/restore")
+    public ResponseEntity<ProductResponseDTO> restore(
+            @PathVariable Long id) {
+        return ResponseEntity.ok(productService.restore(id));
+    }
+
+    @PatchMapping("/{id}/status")
+    public ResponseEntity<ProductResponseDTO> updateStatus(@PathVariable Long id, @RequestBody Map<String, String> body) {
+        ProductStatus newStatus = ProductStatus.valueOf(body.get("status"));
+        productService.updateStatus(id, newStatus);
+        return ResponseEntity.ok().build();
     }
 
     @GetMapping("/upload-signature")

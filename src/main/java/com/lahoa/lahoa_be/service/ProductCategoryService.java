@@ -4,7 +4,6 @@ import com.lahoa.lahoa_be.common.enums.Status;
 import com.lahoa.lahoa_be.dto.filter.CategoryFilterRequestDTO;
 import com.lahoa.lahoa_be.dto.request.CategoryRequestDTO;
 import com.lahoa.lahoa_be.dto.response.*;
-import com.lahoa.lahoa_be.entity.ProductCategoryEntity;
 
 import java.util.List;
 
@@ -26,16 +25,6 @@ public interface ProductCategoryService {
      * Admin - Dropdown tree category
      */
     List<ProductPropertyResponseDTO> getDropdownCategory();
-
-    /**
-     * Ecommerce - Chi tiết category theo slug
-     */
-    CategoryEcResponseDTO getBySlug(String slug);
-
-    /**
-     * Ecommerce - Tree category
-     */
-    List<CategoryEcResponseDTO> getCategoryTree();
 
     /**
      * Tạo category
@@ -62,4 +51,14 @@ public interface ProductCategoryService {
      * Update status
      */
     void updateStatus(Long id, Status status);
+
+    /**
+     * Ecommerce - Chi tiết category theo slug
+     */
+    CategoryEcResponseDTO getBySlug(String slug);
+
+    /**
+     * Ecommerce - Tree category
+     */
+    List<CategoryEcResponseDTO> getCategoryTree();
 }

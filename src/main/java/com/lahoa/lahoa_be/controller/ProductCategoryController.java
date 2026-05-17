@@ -76,7 +76,7 @@ public class ProductCategoryController {
     }
 
     @PatchMapping("/{id}/status")
-    public ResponseEntity<?> updateStatus(@PathVariable Long id, @RequestBody Map<String, String> body) {
+    public ResponseEntity<CategoryResponseDTO> updateStatus(@PathVariable Long id, @RequestBody Map<String, String> body) {
         Status newStatus = Status.valueOf(body.get("status"));
         categoryService.updateStatus(id, newStatus);
         return ResponseEntity.ok().build();

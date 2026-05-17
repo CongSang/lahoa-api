@@ -25,5 +25,5 @@ public class VariantResponseDTO {
     private boolean isDefault;
     boolean hasRecipe;
 
-    private List<DropdownResponseDTO> values;
+    private List<ProductPropertyResponseDTO> properties;
 }

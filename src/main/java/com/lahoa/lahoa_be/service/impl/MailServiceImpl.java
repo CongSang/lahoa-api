@@ -11,19 +11,22 @@ import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.mail.javamail.MimeMessageHelper;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
+import org.thymeleaf.TemplateEngine;
+import org.thymeleaf.context.Context;
 
 @Service
 @RequiredArgsConstructor
 public class MailServiceImpl implements MailService {
 
     private final JavaMailSender mailSender;
+    private final TemplateEngine templateEngine;
 
     @Value("${spring.mail.properties.mail.smtp.from}")
     private String fromEmail;
 
-    @Async
     @Override
-    public void sendEmail(String to, String subject, String body) {
+    @Async
+    public void sendSimpleEmail(String to, String subject, String body) {
         try {
             SimpleMailMessage message = new SimpleMailMessage();
             message.setFrom(fromEmail);
@@ -36,6 +39,39 @@ public class MailServiceImpl implements MailService {
         }
     }
 
+    @Override
+    public void sendActivationEmail(
+            String to,
+            String name,
+            String activationLink
+    ) {
+        try {
+            Context context = new Context();
+            context.setVariable("name", name);
+            context.setVariable("link", activationLink);
+
+            String html = templateEngine.process(
+                    "email/activation",
+                    context
+            );
+
+            MimeMessage message = mailSender.createMimeMessage();
+
+            MimeMessageHelper helper =
+                    new MimeMessageHelper(message, true, "UTF-8");
+
+            helper.setTo(to);
+            helper.setSubject("Xác thực tài khoản LA HOA");
+            helper.setText(html, true);
+
+            mailSender.send(message);
+
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    @Override
     public void sendEmailWithAttachment(String to, String subject, String body, byte[] attachment, String filename) throws MessagingException {
         MimeMessage message = mailSender.createMimeMessage();
         MimeMessageHelper helper = new MimeMessageHelper(message, true);

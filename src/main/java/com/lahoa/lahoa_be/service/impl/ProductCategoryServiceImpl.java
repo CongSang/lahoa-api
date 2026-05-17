@@ -16,6 +16,7 @@ import com.lahoa.lahoa_be.repository.ProductCategoryRepository;
 import com.lahoa.lahoa_be.service.AuditLogService;
 import com.lahoa.lahoa_be.service.CloudinaryService;
 import com.lahoa.lahoa_be.service.ProductCategoryService;
+import com.lahoa.lahoa_be.util.CompareUtils;
 import com.lahoa.lahoa_be.util.SlugUtils;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -42,6 +43,7 @@ public class ProductCategoryServiceImpl implements ProductCategoryService {
     private final PagedMapper pagedMapper;
 
     // Admin: Lấy danh sách
+    @Override
     public PagedResponseDTO<CategoryResponseDTO> list(
             CategoryFilterRequestDTO filter
     ) {
@@ -94,34 +96,36 @@ public class ProductCategoryServiceImpl implements ProductCategoryService {
     }
 
     // Admin: Lấy tất cả danh mục cha cao nhất
+    @Override
     public List<DropdownResponseDTO> getCategoryParent() {
-        List<ProductCategoryEntity> rootCategories = categoryRepository.findByParentIsNullOrderByDisplayOrderAsc();
+        List<ProductCategoryEntity> rootCategories = categoryRepository.findByParentIsNullAndStatusNot(Status.DELETED);
         return rootCategories.stream().map(categoryMapper::toDropdown).collect(Collectors.toList());
     }
 
+    @Override
     public List<ProductPropertyResponseDTO> getDropdownCategory() {
-        List<ProductCategoryEntity> categories = categoryRepository.findAllByStatusOrderByDisplayOrderAsc(Status.ACTIVE);
+        List<ProductCategoryEntity> categories = categoryRepository.findAllByStatus(Status.ACTIVE);
         return categories.stream()
                 .filter(cat -> cat.getParent() == null)
                 .map(cat -> categoryMapper.toTreeDropdown(cat, categories))
                 .collect(Collectors.toList());
     }
 
-    // EC: Lấy chi tiết
-    public CategoryEcResponseDTO getBySlug(String slug) {
-        ProductCategoryEntity response = categoryRepository.findBySlug(slug)
-                .filter(c -> c.getStatus() != Status.DELETED)
-                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy danh mục"));
-        return categoryMapper.toEcDTO(response);
-    }
+    private void validateName(String name, Long excludeId) {
+        boolean exists = excludeId == null
+                ? categoryRepository.existsByNameAndStatusNot(
+                name,
+                Status.DELETED
+        )
+                : categoryRepository.existsByNameAndIdNotAndStatusNot(
+                name,
+                excludeId,
+                Status.DELETED
+        );
 
-    // EC: Lấy tất cả danh mục để khách hàng filter
-    public List<CategoryEcResponseDTO> getCategoryTree() {
-        List<ProductCategoryEntity> categories = categoryRepository.findAllByStatusOrderByDisplayOrderAsc(Status.ACTIVE);
-        return categories.stream()
-                .filter(cat -> cat.getParent() == null)
-                .map(cat -> categoryMapper.toTree(cat, categories))
-                .collect(Collectors.toList());
+        if (exists) {
+            throw new BadRequestException("Tên danh mục đã tồn tại");
+        }
     }
 
     private String getFullCategoryPath(ProductCategoryEntity category) {
@@ -142,11 +146,35 @@ public class ProductCategoryServiceImpl implements ProductCategoryService {
         return category;
     }
 
+    private void updateChildrenPath(ProductCategoryEntity parent) {
+
+        List<ProductCategoryEntity> children =
+                categoryRepository.findByParentId(parent.getId());
+
+        for (ProductCategoryEntity child : children) {
+
+            child.setPath(getFullCategoryPath(child));
+
+            updateChildrenPath(child);
+        }
+    }
+
+    private String generateUniqueSlug(String base, Long excludeId) {
+        String slug = base;
+        int i = 1;
+
+        while (categoryRepository.existsBySlugAndIdNot(slug, excludeId)) {
+            slug = base + "-" + i++;
+        }
+
+        return slug;
+    }
+
+    @Override
     @Transactional
     public CategoryResponseDTO create(CategoryRequestDTO request) {
         String name = request.getName().trim();
-        categoryRepository.findByName(name)
-                .orElseThrow(() -> new BadRequestException("Tên danh mục đã tồn tại"));
+        validateName(name, null);
         try {
             String slug = generateUniqueSlug(SlugUtils.generateSlug(name), null);
             ProductCategoryEntity category = categoryMapper.toEntity(request, slug);
@@ -161,13 +189,14 @@ public class ProductCategoryServiceImpl implements ProductCategoryService {
             ProductCategoryEntity saved = categoryRepository.save(category);
             CategoryResponseDTO newCategory = categoryMapper.toDTO(saved);
 
-            auditService.log(
+            auditService.logAfterCommit(
                     AuditAction.CREATE,
                     AuditEntityType.CATEGORY,
                     saved.getId(),
                     saved.getName(),
                     null,
-                    newCategory
+                    newCategory,
+                    null
             );
 
             log.info("Created Category id={}", saved.getId());
@@ -181,33 +210,17 @@ public class ProductCategoryServiceImpl implements ProductCategoryService {
         }
     }
 
-    private void updateChildrenPath(ProductCategoryEntity parent) {
-
-        List<ProductCategoryEntity> children =
-                categoryRepository.findByParentId(parent.getId());
-
-        for (ProductCategoryEntity child : children) {
-
-            child.setPath(getFullCategoryPath(child));
-
-            updateChildrenPath(child);
-        }
-    }
-
+    @Override
     @Transactional
     public CategoryResponseDTO update(Long id, CategoryRequestDTO request) {
         ProductCategoryEntity category = getActiveCategory(id);
+        String name = request.getName().trim();
+        validateName(name, category.getId());
+
         CategoryResponseDTO oldCategory = categoryMapper.toDTO(category);
         String oldPublicId = category.getImagePublicId();
         String newPublicId = request.getImagePublicId();
         try {
-            String name = request.getName().trim();
-            Optional<ProductCategoryEntity> existing = categoryRepository.findByName(name);
-
-            if (existing.isPresent() && !existing.get().getId().equals(id)) {
-                throw new BadRequestException("Tên danh mục đã tồn tại");
-            }
-
             boolean parentChanged = false;
             boolean nameChanged = !category.getName().equals(name);
 
@@ -258,14 +271,20 @@ public class ProductCategoryServiceImpl implements ProductCategoryService {
             ProductCategoryEntity saved = categoryRepository.save(category);
             CategoryResponseDTO newCategory = categoryMapper.toDTO(saved);
 
-            auditService.log(
-                    AuditAction.UPDATE,
-                    AuditEntityType.CATEGORY,
-                    saved.getId(),
-                    saved.getName(),
-                    oldCategory,
-                    newCategory
-            );
+            Map<String, Object> changed =
+                    CompareUtils.diff(oldCategory, newCategory);
+
+            if (!changed.isEmpty()) {
+                auditService.logAfterCommit(
+                        AuditAction.UPDATE,
+                        AuditEntityType.CATEGORY,
+                        saved.getId(),
+                        saved.getName(),
+                        null,
+                        null,
+                        changed
+                );
+            }
 
             log.info("Updated Category id={}", id);
 
@@ -278,6 +297,7 @@ public class ProductCategoryServiceImpl implements ProductCategoryService {
         }
     }
 
+    @Override
     @Transactional
     public void delete(Long id) {
         ProductCategoryEntity category = getActiveCategory(id);
@@ -290,8 +310,6 @@ public class ProductCategoryServiceImpl implements ProductCategoryService {
             throw new BadRequestException("Không thể xóa danh mục đang chứa sản phẩm");
         }
 
-        CategoryResponseDTO oldCategory = categoryMapper.toDTO(category);
-
         cloudinaryService.deleteAfterCommit(category.getImagePublicId());
         mappingRepository.deleteByCategoryId(id);
         category.setImageUrl(null);
@@ -300,31 +318,20 @@ public class ProductCategoryServiceImpl implements ProductCategoryService {
         category.setStatus(Status.DELETED);
         category.setPath(null);
 
-        CategoryResponseDTO newCategory = categoryMapper.toDTO(category);
-
-        auditService.log(
+        auditService.logAfterCommit(
                 AuditAction.DELETE,
                 AuditEntityType.CATEGORY,
                 category.getId(),
                 category.getName(),
-                oldCategory,
-                newCategory
+                null,
+                null,
+                null
         );
 
         log.info("Soft deleted Category id={}", id);
     }
 
-    private String generateUniqueSlug(String base, Long excludeId) {
-        String slug = base;
-        int i = 1;
-
-        while (categoryRepository.existsBySlugAndIdNot(slug, excludeId)) {
-            slug = base + "-" + i++;
-        }
-
-        return slug;
-    }
-
+    @Override
     @Transactional
     public CategoryResponseDTO restore(Long id) {
 
@@ -335,22 +342,22 @@ public class ProductCategoryServiceImpl implements ProductCategoryService {
             throw new BadRequestException("Danh mục chưa bị xóa");
         }
 
-        CategoryResponseDTO oldCategory = categoryMapper.toDTO(category);
+        validateName(category.getName(), category.getId());
 
         category.setStatus(Status.ACTIVE);
         category.setParent(null);
         category.setSlug(generateUniqueSlug(category.getSlug(), category.getId()));
         category.setPath(category.getSlug());
 
-        CategoryResponseDTO newCategory = categoryMapper.toDTO(category);
-
-        auditService.log(
+        auditService.logAfterCommit(
                 AuditAction.RESTORE,
                 AuditEntityType.CATEGORY,
                 category.getId(),
                 category.getName(),
-                oldCategory,
-                newCategory
+                null,
+                null,
+                null
+
         );
 
         log.info("Restored Category id={}", id);
@@ -358,12 +365,50 @@ public class ProductCategoryServiceImpl implements ProductCategoryService {
         return categoryMapper.toDTO(category);
     }
 
+    @Override
     @Transactional
     public void updateStatus(Long id, Status status) {
-        ProductCategoryEntity category = categoryRepository.findById(id)
-                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy danh mục cần cập nhật"));
+        ProductCategoryEntity category = getActiveCategory(id);
+        CategoryResponseDTO oldCategory = categoryMapper.toDTO(category);
+
         category.setStatus(status);
+        ProductCategoryEntity saved = categoryRepository.save(category);
+
+        CategoryResponseDTO newCategory = categoryMapper.toDTO(saved);
+
+        Map<String, Object> changed =
+                CompareUtils.diff(oldCategory, newCategory);
+
+        if (!changed.isEmpty()) {
+            auditService.logAfterCommit(
+                    AuditAction.UPDATE,
+                    AuditEntityType.CATEGORY,
+                    saved.getId(),
+                    saved.getName(),
+                    null,
+                    null,
+                    changed
+            );
+        }
 
         log.info("Changed status Category id={} to {}", id, status);
+    }
+
+    // EC: Lấy tất cả danh mục để khách hàng filter
+    @Override
+    public List<CategoryEcResponseDTO> getCategoryTree() {
+        List<ProductCategoryEntity> categories = categoryRepository.findAllByStatus(Status.ACTIVE);
+        return categories.stream()
+                .filter(cat -> cat.getParent() == null)
+                .map(cat -> categoryMapper.toTree(cat, categories))
+                .collect(Collectors.toList());
+    }
+
+    // EC: Lấy chi tiết
+    @Override
+    public CategoryEcResponseDTO getBySlug(String slug) {
+        ProductCategoryEntity response = categoryRepository.findBySlugAndStatus(slug, Status.ACTIVE)
+                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy danh mục"));
+        return categoryMapper.toEcDTO(response);
     }
 }

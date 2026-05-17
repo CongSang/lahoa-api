@@ -18,6 +18,7 @@ public class CloudinaryServiceImpl implements CloudinaryService {
 
     private final Cloudinary cloudinary;
 
+    @Override
     public Map<String, Object> generateSignature(String folder) {
 
         long timestamp = System.currentTimeMillis() / 1000;
@@ -38,8 +39,8 @@ public class CloudinaryServiceImpl implements CloudinaryService {
         );
     }
 
-    @Async
     @Override
+    @Async
     public void deleteImage(String publicId) {
         if (publicId == null || publicId.isBlank()) return;
 
@@ -52,6 +53,7 @@ public class CloudinaryServiceImpl implements CloudinaryService {
         }
     }
 
+    @Override
     public void deleteAfterCommit(String publicId) {
         TransactionUtils.runAfterCommit(() -> deleteImage(publicId));
     }

@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta http-equiv="Content-Type"
+          content="text/html; charset=UTF-8" />
+    <meta charset="UTF-8"/>
+    <title>Đơn hàng của bạn đã được xác nhận | LA HOA</title>
+</head>
+
+<body style="
+    margin:0;
+    padding:0;
+    background:#faf7f8;
+    font-family:Arial,sans-serif;
+">
+
+<table style="
+    width:100%;
+    border-collapse:collapse;
+    background:#faf7f8;
+    padding:24px 0;
+">
+
+    <tr>
+        <td style="padding:24px 16px">
+
+            <table style="
+    max-width:600px;
+    margin:0px auto;
+    border-collapse:collapse;
+    background:#ffffff;
+    overflow:hidden;
+">
+
+                <!-- HEADER -->
+                <tr>
+                    <td th:replace="email/fragments/header :: header"></td>
+                </tr>
+
+                <!-- TITLE -->
+                <tr>
+                    <td style="
+    background:#2f2b33;
+    padding:16px 24px;
+">
+
+                        <h2 style="
+    margin:0;
+    color:#fff;
+    font-size:20px;
+    font-weight:600;
+">
+                            Đơn hàng đang được giao
+                        </h2>
+
+                    </td>
+                </tr>
+
+                <!-- CONTENT -->
+                <tr>
+                    <td style="
+    padding:24px;
+    color:#444;
+    font-size:14px;
+    line-height:1.5
+">
+
+                        <p>Xin chào <b th:text="${name}"></b>,</p>
+
+                        <p>
+                            Bó hoa của bạn đã rời khỏi cửa hàng
+                            và đang trên đường đến người nhận.
+                        </p>
+
+                        <div style="
+            background:#faf7f8;
+            padding:4px 16px;
+            border-radius:2px;
+            margin:16px 0;
+        ">
+                            <p><b>Mã đơn:</b> <span th:text="${orderCode}"></span></p>
+                            <p><b>Đơn vị giao:</b> <span th:text="${shippingProvider}"></span></p>
+                            <p><b>Dự kiến giao:</b> <span th:text="${estimatedTime}"></span></p>
+                        </div>
+
+                        <div style="margin:32px 0;">
+                            <a th:href="${trackingLink}"
+                               target="_blank"
+                               style="
+               background:#AB886D;
+               color:white;
+               padding:10px 30px;
+               border-radius:2px;
+               text-decoration:none;
+               font-weight:600;
+               font-size:16px;
+               line-height:20px;
+               cursor: pointer;">
+                                Xem hành trình đơn hàng
+                            </a>
+                        </div>
+
+                        <p style="color:#6b7280;">
+                            Hãy giữ điện thoại bên cạnh để nhận cuộc gọi từ shipper nhé.
+                        </p>
+
+                    </td>
+                </tr>
+
+
+
+                <!-- FOOTER -->
+                <tr>
+                    <td th:replace="email/fragments/footer :: footer"></td>
+                </tr>
+
+            </table>
+
+        </td>
+    </tr>
+
+</table>
+
+</body>
+</html>

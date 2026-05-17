@@ -2,6 +2,8 @@ package com.lahoa.lahoa_be.config;
 
 import com.lahoa.lahoa_be.securiry.UserPrincipal;
 import com.lahoa.lahoa_be.service.impl.JwtServiceImpl;
+import io.jsonwebtoken.ExpiredJwtException;
+import io.jsonwebtoken.JwtException;
 import jakarta.annotation.Nonnull;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
@@ -37,26 +39,43 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         String email = null;
         String jwt = null;
 
-        if(authHeader != null && authHeader.startsWith("Bearer ")) {
-            jwt = authHeader.substring(7);
-            email = jwtService.extractUsername(jwt);
-        }
-
-        if(email != null && SecurityContextHolder.getContext().getAuthentication() == null) {
-            UserPrincipal userPrincipal = (UserPrincipal) this.userDetailsService.loadUserByUsername(email);
-            if(jwtService.isTokenValid(jwt, userPrincipal)) {
-                UsernamePasswordAuthenticationToken authToken = new UsernamePasswordAuthenticationToken(
-                        userPrincipal,
-                        null,
-                        userPrincipal.getAuthorities()
-                );
-                authToken.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
-                SecurityContextHolder.getContext().setAuthentication(authToken);
+        try {
+            if (authHeader != null && authHeader.startsWith("Bearer ")) {
+                jwt = authHeader.substring(7);
+                email = jwtService.extractUsername(jwt);
             }
+
+            if(email != null && SecurityContextHolder.getContext().getAuthentication() == null) {
+                UserPrincipal userPrincipal = (UserPrincipal) this.userDetailsService.loadUserByUsername(email);
+                if(jwtService.isTokenValid(jwt, userPrincipal)) {
+                    UsernamePasswordAuthenticationToken authToken = new UsernamePasswordAuthenticationToken(
+                            userPrincipal,
+                            null,
+                            userPrincipal.getAuthorities()
+                    );
+                    authToken.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
+                    SecurityContextHolder.getContext().setAuthentication(authToken);
+                }
+            }
+
+            filterChain.doFilter(request, response);
+        } catch (ExpiredJwtException ex) {
+            SecurityContextHolder.clearContext();
+
+            response.sendError(
+                    HttpServletResponse.SC_UNAUTHORIZED,
+                    "JWT expired"
+            );
+        } catch (JwtException ex) {
+            SecurityContextHolder.clearContext();
+            response.sendError(
+                    HttpServletResponse.SC_UNAUTHORIZED,
+                    "Unauthorized"
+            );
         }
-        filterChain.doFilter(request, response);
 
         int status = response.getStatus();
+
         log.info("⬅️ Response: {} {} - {}", method, uri, status);
     }
 }

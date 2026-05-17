@@ -8,15 +8,18 @@ import com.lahoa.lahoa_be.entity.ProductVariantEntity;
 import com.lahoa.lahoa_be.entity.PropertyValueEntity;
 import com.lahoa.lahoa_be.exception.BadRequestException;
 import com.lahoa.lahoa_be.repository.PropertyValueRepository;
+import com.lahoa.lahoa_be.repository.VariantRepository;
 import com.lahoa.lahoa_be.service.PropertyService;
 import com.lahoa.lahoa_be.service.VariantService;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.*;
 import java.util.stream.Collectors;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class VariantServiceImpl implements VariantService {
@@ -24,9 +27,9 @@ public class VariantServiceImpl implements VariantService {
     private final PropertyService propertyService;
     private final PropertyValueRepository propertyValueRepository;
 
+    @Override
     @Transactional
     public void syncVariants(ProductEntity product, ProductRequestDTO req) {
-
         List<VariantRequestDTO> incoming = Optional.ofNullable(req.getVariants())
                 .orElse(List.of());
 
@@ -43,7 +46,7 @@ public class VariantServiceImpl implements VariantService {
         // DELETE
         for (ProductVariantEntity v : product.getVariants()) {
             if (v.getId() != null && !incomingIds.contains(v.getId())) {
-                v.setStatus(VariantStatus.INACTIVE);
+                v.setStatus(VariantStatus.DELETED);
             }
         }
 
@@ -58,11 +61,15 @@ public class VariantServiceImpl implements VariantService {
             } else {
                 // CREATE
                 variant = new ProductVariantEntity();
-                variant.setStatus(VariantStatus.ACTIVE);
                 variant.setProduct(product);
                 product.getVariants().add(variant);
             }
 
+            variant.setStatus(
+                    dto.getStatus() != null
+                            ? dto.getStatus()
+                            : VariantStatus.ACTIVE
+            );
             variant.setSku(resolveSku(product, variant, dto));
             variant.setPrice(dto.getPrice());
             variant.setDefault(dto.isDefault());
@@ -80,6 +87,9 @@ public class VariantServiceImpl implements VariantService {
         Set<String> seen = new HashSet<>();
 
         for (ProductVariantEntity v : variants) {
+            if (v.getStatus() == VariantStatus.DELETED) {
+                continue;
+            }
 
             String key = v.getPropertyValues().stream()
                     .map(vpv -> vpv.getPropertyValue().getId().toString())
@@ -97,6 +107,9 @@ public class VariantServiceImpl implements VariantService {
         Set<String> seen = new HashSet<>();
 
         for (ProductVariantEntity v : variants) {
+            if (v.getStatus() == VariantStatus.DELETED) {
+                continue;
+            }
 
             if (v.getStatus() == VariantStatus.INACTIVE) continue;
 

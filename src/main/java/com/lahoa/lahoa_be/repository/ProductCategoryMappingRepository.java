@@ -12,8 +12,6 @@ public interface ProductCategoryMappingRepository extends JpaRepository<ProductC
 
     List<ProductCategoryMappingEntity> findByProductId(Long id);
 
-    void deleteByProductId(Long id);
-
     @Query("""
         SELECT m.category.id, COUNT(DISTINCT m.product.id)
         FROM ProductCategoryMappingEntity m

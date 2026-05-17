@@ -21,7 +21,7 @@ public class ProductResponseDTO {
     private String description;
 
     @JsonSerialize(using = BigDecimalPlainSerializer.class)
-    private BigDecimal price;
+    private BigDecimal basePrice;
     private String mainImage;
     private String imagePublicId;
     private Integer displayOrder;

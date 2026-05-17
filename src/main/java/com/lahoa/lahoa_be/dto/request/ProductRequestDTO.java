@@ -34,7 +34,7 @@ public class ProductRequestDTO {
     @NotNull(message = "Giá sản phẩm không được để trống")
     @DecimalMin(value = "0", inclusive = false, message = "Giá phải > 0")
     @Digits(integer = 12, fraction = 2, message = "Giá không hợp lệ")
-    private BigDecimal price;
+    private BigDecimal basePrice;
 
     @NotEmpty(message = "Phải chọn ít nhất 1 danh mục")
     private List<@NotNull(message = "CategoryId không hợp lệ") Long> categoryIds;

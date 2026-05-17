@@ -1,12 +1,14 @@
 package com.lahoa.lahoa_be.mapper;
 
-import com.lahoa.lahoa_be.dto.response.DropdownResponseDTO;
 import com.lahoa.lahoa_be.dto.response.VariantResponseDTO;
 import com.lahoa.lahoa_be.entity.ProductVariantEntity;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
 @Component
+@RequiredArgsConstructor
 public class VariantMapper {
+    private final PropertyMapper propertyMapper;
 
     public VariantResponseDTO toDTO(ProductVariantEntity variant) {
         return VariantResponseDTO.builder()
@@ -16,18 +18,7 @@ public class VariantMapper {
                 .stock(0)
                 .status(variant.getStatus())
                 .isDefault(variant.isDefault())
-                .values(
-                        variant.getPropertyValues().stream()
-                                .map(vpv -> {
-                                    var val = vpv.getPropertyValue();
-                                    return DropdownResponseDTO.builder()
-                                            .id(val.getId())
-                                            .value(val.getValue())
-                                            .label(val.getLabel())
-                                            .build();
-                                })
-                                .toList()
-                )
+                .properties(propertyMapper.toVariantPropertyDTO(variant.getPropertyValues()))
                 .build();
     }
 }

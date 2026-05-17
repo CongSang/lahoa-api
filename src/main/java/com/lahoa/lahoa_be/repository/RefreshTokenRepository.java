@@ -3,6 +3,8 @@ package com.lahoa.lahoa_be.repository;
 import com.lahoa.lahoa_be.entity.RefreshTokenEntity;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Modifying;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Instant;
@@ -16,7 +18,10 @@ public interface RefreshTokenRepository extends JpaRepository<RefreshTokenEntity
     @Transactional
     void deleteByUserId(Long id);
 
-    @Modifying
+    @Modifying(clearAutomatically = true, flushAutomatically = true)
     @Transactional
-    int deleteByExpiryDateBefore(Instant now);
+    @Query(""" 
+        DELETE FROM RefreshTokenEntity r WHERE r.expiryDate < :now
+    """)
+    int deleteExpired(@Param("now") Instant now);
 }

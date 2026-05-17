@@ -56,6 +56,7 @@ public class AuthenticationServiceImpl implements AuthenticationService {
     @Value("${app.activation.url}")
     private String backendURL;
 
+    @Override
     @Transactional
     public UserResponseDTO register(UserRequestDTO userDTO) {
         if (userRepository.existsByEmail(userDTO.getEmail())) {
@@ -81,10 +82,11 @@ public class AuthenticationServiceImpl implements AuthenticationService {
 
         //send activation email
         String activationLink = backendURL + "/api/auth/activate?token=" + newUser.getActivationToken();
-        String subject = "Xác thực tài khoản LA HOA website";
-        String body = "Chào " + newUser.getFullName() + ",\n\n" +
-                "Vui lòng click vào link sau để kích hoạt tài khoản của bạn:\n" + activationLink;
-        mailService.sendEmail(newUser.getEmail(), subject, body);
+        mailService.sendActivationEmail(
+                newUser.getEmail(),
+                newUser.getFullName(),
+                activationLink
+        );
         return userMapper.toDTO(newUser);
     }
 
@@ -101,6 +103,7 @@ public class AuthenticationServiceImpl implements AuthenticationService {
         return principal;
     }
 
+    @Override
     public UserResponseDTO getPublicProfile(String email) {
         UserPrincipal userPrincipal = getCurrentProfile();
         UserEntity currentUser = null;
@@ -129,6 +132,7 @@ public class AuthenticationServiceImpl implements AuthenticationService {
         return response;
     }
 
+    @Override
     public boolean activate(String activationToken) {
         return userRepository.findByActivationToken(activationToken)
                 .map(profile -> {
@@ -139,6 +143,7 @@ public class AuthenticationServiceImpl implements AuthenticationService {
                 .orElse(false);
     }
 
+    @Override
     public AuthResponseDTO authenticate(AuthRequestDTO authRequestDTO) throws BadCredentialsException {
         Optional<UserEntity> userOptional = userRepository.findByEmail(authRequestDTO.getEmail());
         UserEntity user;
@@ -171,6 +176,7 @@ public class AuthenticationServiceImpl implements AuthenticationService {
                 AuditEntityType.USER,
                 user.getId(),
                 user.getFullName(),
+                null,
                 null,
                 null
         );

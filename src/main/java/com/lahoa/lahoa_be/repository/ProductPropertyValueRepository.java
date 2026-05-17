@@ -18,7 +18,8 @@ public interface ProductPropertyValueRepository extends JpaRepository<ProductPro
     List<ProductPropertyValueEntity> findPropertiesByProductId(@Param("id") Long id);
 
     @Query("""
-        SELECT ppv FROM ProductPropertyValueEntity ppv
+        SELECT DISTINCT ppv
+        FROM ProductPropertyValueEntity ppv
         LEFT JOIN FETCH ppv.propertyValue pv
         LEFT JOIN FETCH pv.property
         WHERE ppv.product.id IN :ids

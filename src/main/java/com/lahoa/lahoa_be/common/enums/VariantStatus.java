@@ -6,7 +6,8 @@ import lombok.Getter;
 public enum VariantStatus {     // chưa public
     ACTIVE("Hoạt động"),
     INACTIVE("Không hoạt động"),
-    OUT_OF_STOCK("Hết hàng");
+    OUT_OF_STOCK("Hết hàng"),
+    DELETED("Đã xóa");
 
     private final String displayName;
 

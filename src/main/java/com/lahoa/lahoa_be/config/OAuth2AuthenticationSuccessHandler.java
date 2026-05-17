@@ -1,9 +1,13 @@
 package com.lahoa.lahoa_be.config;
 
+import com.lahoa.lahoa_be.common.enums.AuditAction;
+import com.lahoa.lahoa_be.common.enums.AuditEntityType;
 import com.lahoa.lahoa_be.entity.RefreshTokenEntity;
+import com.lahoa.lahoa_be.entity.UserEntity;
 import com.lahoa.lahoa_be.securiry.UserPrincipal;
-import com.lahoa.lahoa_be.service.impl.JwtServiceImpl;
-import com.lahoa.lahoa_be.service.impl.RefreshTokenServiceImpl;
+import com.lahoa.lahoa_be.service.AuditLogService;
+import com.lahoa.lahoa_be.service.JwtService;
+import com.lahoa.lahoa_be.service.RefreshTokenService;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
@@ -19,8 +23,9 @@ import java.io.IOException;
 @RequiredArgsConstructor
 public class OAuth2AuthenticationSuccessHandler extends SimpleUrlAuthenticationSuccessHandler {
 
-    private final JwtServiceImpl jwtService;
-    private final RefreshTokenServiceImpl refreshTokenService;
+    private final JwtService jwtService;
+    private final RefreshTokenService refreshTokenService;
+    private final AuditLogService auditService;
 
     @Value("${app.activation.frontend.url}")
     private String frontendURL;
@@ -35,9 +40,21 @@ public class OAuth2AuthenticationSuccessHandler extends SimpleUrlAuthenticationS
             response.sendError(HttpServletResponse.SC_UNAUTHORIZED, "Unauthorized User Type");
             return;
         }
-        Long userId = principal.getUser().getId();
+
+        UserEntity user = principal.getUser();
+        Long userId = user.getId();
         String token = jwtService.generateToken(principal);
         RefreshTokenEntity refreshToken = refreshTokenService.createRefreshToken(userId);
+
+        auditService.log(
+                AuditAction.LOGIN,
+                AuditEntityType.USER,
+                userId,
+                user.getFullName(),
+                null,
+                null,
+                null
+        );
 
         String targetUrl = UriComponentsBuilder.fromUriString(frontendURL + "/auth/redirect")
                 .queryParam("token", token)

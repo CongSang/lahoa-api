@@ -1,10 +1,8 @@
 package com.lahoa.lahoa_be.service;
 
-import io.jsonwebtoken.Claims;
 import org.springframework.security.core.userdetails.UserDetails;
 
 import java.security.Key;
-import java.util.function.Function;
 
 public interface JwtService {
 
@@ -12,19 +10,6 @@ public interface JwtService {
      * Generate JWT token
      */
     String generateToken(UserDetails userDetails);
-
-    /**
-     * Extract all claims from token
-     */
-    Claims extractAllClaims(String token);
-
-    /**
-     * Extract specific claim
-     */
-    <T> T extractClaim(
-            String token,
-            Function<Claims, T> claimsResolver
-    );
 
     /**
      * Check token expired

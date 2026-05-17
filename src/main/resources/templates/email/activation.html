@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta http-equiv="Content-Type"
+          content="text/html; charset=UTF-8" />
+    <meta charset="UTF-8"/>
+    <title>Xác thực tài khoản LA HOA</title>
+</head>
+
+<body style="
+    margin:0;
+    padding:0;
+    background:#faf7f8;
+    font-family:Arial,sans-serif;
+">
+
+<table style="
+    width:100%;
+    border-collapse:collapse;
+    background:#faf7f8;
+    padding:24px 0;
+">
+
+    <tr>
+        <td style="padding:24px 16px">
+
+            <table style="
+    max-width:600px;
+    margin:0px auto;
+    border-collapse:collapse;
+    background:#ffffff;
+    overflow:hidden;
+">
+
+                <!-- HEADER -->
+                <tr>
+                    <td th:replace="email/fragments/header :: header"></td>
+                </tr>
+
+                <!-- TITLE -->
+                <tr>
+                    <td style="
+    background:#2f2b33;
+    padding:16px 24px;
+">
+
+                        <h2 style="
+    margin:0;
+    color:#fff;
+    font-size:20px;
+    font-weight:600;
+">
+                            Xác thực tài khoản
+                        </h2>
+
+                    </td>
+                </tr>
+
+                <!-- CONTENT -->
+                <tr>
+                    <td style="
+    padding:24px;
+    color:#444;
+    font-size:14px;
+    line-height:1.5
+">
+
+                        <p>
+                            Xin chào
+                            <strong style="color:#6e5b00;" th:text="${name}"></strong>,
+                        </p>
+
+                        <p>
+                            Cảm ơn bạn đã đăng ký tài khoản tại
+                            <strong style="color:#6e5b00;">LA HOA</strong>.
+                        </p>
+
+                        <p>
+                            Nhấn nút bên dưới để xác thực email và bắt đầu trải nghiệm
+                            thế giới hoa nghệ thuật của chúng mình.
+                        </p>
+
+                        <div style="margin:32px 0;">
+
+                            <a th:href="${link}"
+                               target="_blank"
+                               style="
+                background:#AB886D;
+                color:#fff;
+                text-decoration:none;
+                padding:10px 30px;
+                font-weight:600;
+                border-radius:2px;
+                font-size:16px;
+                line-height:20px;
+                cursor: pointer;
+">
+                                Xác thực ngay
+                            </a>
+
+                        </div>
+
+                        <p>
+                            Liên kết có hiệu lực trong <strong>48 giờ</strong>.
+                        </p>
+
+                        <p style="color:#777;">
+                            Nếu bạn không yêu cầu đăng ký, vui lòng bỏ qua email này.
+                        </p>
+
+                        <p>
+                            Trân trọng,<br/>
+                            <strong style="color:#6e5b00;">LA HOA Team</strong>
+                        </p>
+
+                    </td>
+                </tr>
+
+                <!-- FOOTER -->
+                <tr>
+                    <td th:replace="email/fragments/footer :: footer"></td>
+                </tr>
+
+            </table>
+
+        </td>
+    </tr>
+
+</table>
+
+</body>
+</html>

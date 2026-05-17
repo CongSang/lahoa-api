@@ -22,6 +22,7 @@ public class JwtServiceImpl implements JwtService {
 
     private static final long EXPIRATION_TIME = 3600000; // 1 day
 
+    @Override
     public String generateToken(UserDetails userDetails) {
         Map<String, Object> extraClaims = new HashMap<>();
 
@@ -46,7 +47,7 @@ public class JwtServiceImpl implements JwtService {
                 .compact();
     }
 
-    public Claims extractAllClaims(String token) {
+    private Claims extractAllClaims(String token) {
         return Jwts.parser()
                 .verifyWith(Keys.hmacShaKeyFor(SECRET_KEY.getBytes()))
                 .build()
@@ -54,24 +55,28 @@ public class JwtServiceImpl implements JwtService {
                 .getPayload();
     }
 
-    public <T> T extractClaim(String token, Function<Claims, T> claimsResolver) {
+    private <T> T extractClaim(String token, Function<Claims, T> claimsResolver) {
         final Claims claims = extractAllClaims(token);
         return claimsResolver.apply(claims);
     }
 
+    @Override
     public boolean isTokenExpired(String token) {
         return extractClaim(token, Claims::getExpiration).before(new Date());
     }
 
+    @Override
     public String extractUsername(String token) {
         return extractClaim(token, Claims::getSubject);
     }
 
+    @Override
     public boolean isTokenValid(String token, UserDetails userDetails) {
         final String username = extractUsername(token);
         return (username.equals(userDetails.getUsername()) && !isTokenExpired(token));
     }
 
+    @Override
     public Key getSignInKey() {
         byte[] keyBytes = Decoders.BASE64.decode(SECRET_KEY);
         return Keys.hmacShaKeyFor(keyBytes);

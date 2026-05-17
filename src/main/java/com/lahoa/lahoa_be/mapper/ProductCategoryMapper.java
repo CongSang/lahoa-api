@@ -6,6 +6,7 @@ import com.lahoa.lahoa_be.dto.response.CategoryResponseDTO;
 import com.lahoa.lahoa_be.dto.response.DropdownResponseDTO;
 import com.lahoa.lahoa_be.dto.response.ProductPropertyResponseDTO;
 import com.lahoa.lahoa_be.entity.ProductCategoryEntity;
+import org.hibernate.Hibernate;
 import org.springframework.stereotype.Component;
 
 import java.util.List;
@@ -32,8 +33,19 @@ public class ProductCategoryMapper {
     }
 
     public CategoryResponseDTO toDTO(ProductCategoryEntity entity) {
+        return toDTO(entity, true);
+    }
+
+    public CategoryResponseDTO toDTOWithoutParent(ProductCategoryEntity entity) {
+        return toDTO(entity, false);
+    }
+
+    public CategoryResponseDTO toDTO(
+            ProductCategoryEntity entity,
+            boolean includeParent
+    ) {
         if (entity == null) return null;
-        return CategoryResponseDTO.builder()
+        CategoryResponseDTO.CategoryResponseDTOBuilder builder = CategoryResponseDTO.builder()
                 .id(entity.getId())
                 .name(entity.getName())
                 .description(entity.getDescription())
@@ -41,13 +53,22 @@ public class ProductCategoryMapper {
                 .path(entity.getPath())
                 .imageUrl(entity.getImageUrl())
                 .imagePublicId(entity.getImagePublicId())
-                .parent(this.toDTO(entity.getParent()))
                 .displayOrder(entity.getDisplayOrder())
                 .status(entity.getStatus())
                 .seoTitle(entity.getSeoTitle())
                 .seoDescription(entity.getSeoDescription())
-                .seoKeywords(entity.getSeoKeywords())
-                .build();
+                .seoKeywords(entity.getSeoKeywords());
+
+        if (
+            includeParent &&
+                    Hibernate.isInitialized(entity.getParent()) &&
+                    entity.getParent() != null
+        ) {
+            builder.parent(
+                    toDTO(entity.getParent(), false)
+            );
+        }
+        return builder.build();
     }
 
     public CategoryEcResponseDTO toEcDTO(ProductCategoryEntity entity) {

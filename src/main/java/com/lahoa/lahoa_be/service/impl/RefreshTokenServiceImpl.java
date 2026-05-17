@@ -13,6 +13,7 @@ import com.lahoa.lahoa_be.service.JwtService;
 import com.lahoa.lahoa_be.service.RefreshTokenService;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
@@ -20,6 +21,7 @@ import org.springframework.stereotype.Service;
 import java.time.Instant;
 import java.util.UUID;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class RefreshTokenServiceImpl implements RefreshTokenService {
@@ -32,6 +34,7 @@ public class RefreshTokenServiceImpl implements RefreshTokenService {
     private final JwtService jwtService;
     private final AuditLogService auditService;
 
+    @Override
     public RefreshTokenEntity createRefreshToken(Long userId) {
         refreshTokenRepository.deleteByUserId(userId);
 
@@ -43,6 +46,7 @@ public class RefreshTokenServiceImpl implements RefreshTokenService {
         return refreshTokenRepository.save(refreshToken);
     }
 
+    @Override
     public RefreshTokenEntity verifyExpiration(RefreshTokenEntity token) {
         if (token.getExpiryDate().compareTo(Instant.now()) < 0) {
             refreshTokenRepository.delete(token);
@@ -51,6 +55,7 @@ public class RefreshTokenServiceImpl implements RefreshTokenService {
         return token;
     }
 
+    @Override
     public AuthResponseDTO refreshNewToken(String refreshToken) {
         return refreshTokenRepository.findByToken(refreshToken)
                 .map(this::verifyExpiration)
@@ -67,6 +72,7 @@ public class RefreshTokenServiceImpl implements RefreshTokenService {
                 .orElseThrow(() -> new RuntimeException("Refresh token không tồn tại hoặc đã bị xóa!"));
     }
 
+    @Override
     @Transactional
     public void deleteByUserId(UserEntity user) {
         refreshTokenRepository.deleteByUserId(user.getId());
@@ -77,6 +83,7 @@ public class RefreshTokenServiceImpl implements RefreshTokenService {
                 user.getId(),
                 user.getFullName(),
                 null,
+                null,
                 null
         );
     }
@@ -85,11 +92,12 @@ public class RefreshTokenServiceImpl implements RefreshTokenService {
      * Tự động xóa các Token đã hết hạn trong Database
      * cron = "0 0 0 * * ?" : Chạy vào đúng 00:00:00 mỗi ngày
      */
+    @Override
     @Scheduled(cron = "0 0 0 * * ?")
     @Transactional
     public void purgeExpiredTokens() {
         Instant now = Instant.now();
-        int deletedCount = refreshTokenRepository.deleteByExpiryDateBefore(now);
-        System.out.println("Đã dọn dẹp " + deletedCount + " Refresh Tokens hết hạn vào lúc " + now);
+        int deletedCount = refreshTokenRepository.deleteExpired(now);
+        log.info("Đã dọn dẹp {} Refresh Tokens hết hạn vào lúc {}", deletedCount, now);
     }
 }

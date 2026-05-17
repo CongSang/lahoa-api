@@ -6,7 +6,8 @@ import lombok.*;
 import java.time.Instant;
 
 @EqualsAndHashCode(callSuper = true)
-@Entity(name = "refresh_token")
+@Entity
+@Table(name = "refresh_token")
 @Data
 @Builder
 @AllArgsConstructor

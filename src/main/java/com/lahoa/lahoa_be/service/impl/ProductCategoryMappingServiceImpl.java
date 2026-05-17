@@ -23,6 +23,7 @@ public class ProductCategoryMappingServiceImpl implements ProductCategoryMapping
     private final ProductCategoryMappingRepository mappingRepository;
     private final ProductCategoryRepository categoryRepository;
 
+    @Override
     @Transactional
     public void syncCategories(ProductEntity product, ProductRequestDTO req) {
 

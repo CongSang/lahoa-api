@@ -1,7 +1,6 @@
 package com.lahoa.lahoa_be.service.impl;
 
-import com.lahoa.lahoa_be.common.enums.ProductStatus;
-import com.lahoa.lahoa_be.common.enums.Status;
+import com.lahoa.lahoa_be.common.enums.*;
 import com.lahoa.lahoa_be.dto.filter.ProductFilterRequestDTO;
 import com.lahoa.lahoa_be.dto.request.ProductRequestDTO;
 import com.lahoa.lahoa_be.dto.response.PagedResponseDTO;
@@ -20,6 +19,7 @@ import com.lahoa.lahoa_be.repository.ProductRepository;
 import com.lahoa.lahoa_be.repository.VariantRepository;
 import com.lahoa.lahoa_be.service.*;
 import com.lahoa.lahoa_be.specification.ProductSpecification;
+import com.lahoa.lahoa_be.util.CompareUtils;
 import com.lahoa.lahoa_be.util.SlugUtils;
 import com.lahoa.lahoa_be.util.SnowflakeIdGenerator;
 import lombok.RequiredArgsConstructor;
@@ -31,6 +31,7 @@ import org.springframework.data.domain.Sort;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
 
 import java.math.BigDecimal;
 import java.util.List;
@@ -52,8 +53,10 @@ public class ProductServiceImpl implements ProductService {
     private final ProductCategoryMappingService mappingService;
     private final PropertyService propertyService;
     private final VariantService variantService;
+    private final AuditLogService auditService;
     private final SnowflakeIdGenerator idGenerator;
 
+    @Override
     public PagedResponseDTO<ProductResponseDTO> list(ProductFilterRequestDTO filter) {
         Specification<ProductEntity> spec = ProductSpecification.filter(filter);
 
@@ -79,7 +82,7 @@ public class ProductServiceImpl implements ProductService {
 
         List<ProductEntity> products = productRepository.findProductsWithCategories(ids);
 
-        List<ProductVariantEntity> variants = variantRepository.findVariantsByProductIds(ids);
+        List<ProductVariantEntity> variants = variantRepository.findAllByProductIdsAndStatusNot(ids, VariantStatus.DELETED);
 
         List<ProductPropertyValueEntity> props =
                 productPropertyValueRepository.findPropertiesByProductIds(ids);
@@ -103,12 +106,27 @@ public class ProductServiceImpl implements ProductService {
         return pagedMapper.toDTO(productsPaged, content);
     }
 
-    private void validate(ProductRequestDTO req) {
-        if (productRepository.existsByName(req.getName().trim())) {
+    private void validateName(String name, Long excludeId) {
+        boolean exists = excludeId == null
+                ? productRepository.existsByNameAndStatusNot(
+                name,
+                ProductStatus.DELETED
+        )
+                : productRepository.existsByNameAndIdNotAndStatusNot(
+                name,
+                excludeId,
+                ProductStatus.DELETED
+        );
+
+        if (exists) {
             throw new BadRequestException("Tên sản phẩm đã tồn tại");
         }
+    }
 
-        if (req.getPrice().compareTo(BigDecimal.ZERO) <= 0) {
+    private void validate(ProductRequestDTO req, Long currentId) {
+        validateName(req.getName().trim(), currentId);
+
+        if (req.getBasePrice().compareTo(BigDecimal.ZERO) <= 0) {
             throw new BadRequestException("Giá phải > 0");
         }
 
@@ -137,9 +155,10 @@ public class ProductServiceImpl implements ProductService {
     }
 
     private ProductResponseDTO buildResponse(Long productId) {
-        ProductEntity full = productRepository.findProductCore(productId).orElseThrow();
+        ProductEntity full = productRepository.findProductCore(productId)
+                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy sản phẩm"));
         List<ProductVariantEntity> variants =
-                variantRepository.findVariantsByProductId(productId);
+                variantRepository.findAllByProductIdAndStatusNot(productId, VariantStatus.DELETED);
         List<ProductPropertyValueEntity> productPropertyValue =
                 productPropertyValueRepository.findPropertiesByProductId(productId);
         return productMapper.toDTO(full, variants, productPropertyValue);
@@ -156,82 +175,128 @@ public class ProductServiceImpl implements ProductService {
         return slug;
     }
 
+    private ProductEntity getActiveProduct(Long id) {
+        ProductEntity product = productRepository.findProductCore(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy sản phẩm"));
+
+        if (product.getStatus() == ProductStatus.DELETED) {
+            throw new BadRequestException("Sản phẩm đã bị xóa");
+        }
+
+        return product;
+    }
+
+    @Override
     @Transactional
     public ProductResponseDTO create(ProductRequestDTO req) {
+        validate(req, null);
 
-        validate(req);
+        try {
+            ProductEntity product = productMapper.toEntity(req);
 
-        ProductEntity product = productMapper.toEntity(req);
-
-        product.setSlug(generateUniqueSlug(
-                SlugUtils.generateSlug(product.getName()),
-                null
-        ));
-
-        Long id = idGenerator.nextId();
-        product.setId(id);
-        product.setStatus(ProductStatus.ACTIVE);
-
-        ProductEntity saved = productRepository.save(product);
-
-        mappingService.syncCategories(saved, req);
-        propertyService.syncProductProperties(product, req);
-        variantService.syncVariants(product, req);
-
-        log.info("Created Product id={}", saved.getId());
-
-        return buildResponse(saved.getId());
-    }
-
-    @Transactional
-    public ProductResponseDTO update(Long id, ProductRequestDTO req) {
-
-        ProductEntity product = getActiveProduct(id);
-
-        validate(req);
-
-        if (req.getImagePublicId() != null &&
-                !req.getImagePublicId().equals(product.getImagePublicId())) {
-
-            cloudinaryService.deleteAfterCommit(product.getImagePublicId());
-        }
-
-        boolean nameChanged = !product.getName().equals(req.getName().trim());
-
-        productMapper.apply(product, req);
-
-        if (nameChanged) {
             product.setSlug(generateUniqueSlug(
                     SlugUtils.generateSlug(product.getName()),
-                    product.getId()
+                    null
             ));
+
+            Long id = idGenerator.nextId();
+            product.setId(id);
+            product.setStatus(ProductStatus.ACTIVE);
+
+            mappingService.syncCategories(product, req);
+            propertyService.syncProductProperties(product, req);
+            variantService.syncVariants(product, req);
+
+            ProductEntity saved = productRepository.save(product);
+            ProductResponseDTO newProduct = buildResponse(saved.getId());
+
+            auditService.logAfterCommit(
+                    AuditAction.CREATE,
+                    AuditEntityType.PRODUCT,
+                    saved.getId(),
+                    saved.getName(),
+                    null,
+                    newProduct,
+                    null
+            );
+
+            log.info("Created Product id={}", saved.getId());
+
+            return newProduct;
+        } catch (Exception e) {
+            if (req.getImagePublicId() != null) {
+                cloudinaryService.deleteImage(req.getImagePublicId());
+            }
+            throw e;
         }
-
-        ProductEntity saved = productRepository.save(product);
-
-        mappingService.syncCategories(saved, req);
-        propertyService.syncProductProperties(product, req);
-        variantService.syncVariants(product, req);
-
-        log.info("Updated Product id={}", saved.getId());
-
-        return buildResponse(saved.getId());
     }
 
-    private ProductEntity getActiveProduct(Long id) {
-        return productRepository.findById(id)
-                .filter(p -> p.getStatus() != ProductStatus.DELETED)
-                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy sản phẩm"));
+    @Override
+    @Transactional
+    public ProductResponseDTO update(Long id, ProductRequestDTO req) {
+        ProductEntity product = getActiveProduct(id);
+
+        validate(req, id);
+
+        ProductResponseDTO oldProduct = buildResponse(id);
+        String oldPublicId = product.getImagePublicId();
+        String newPublicId = req.getImagePublicId();
+
+        try {
+            if (oldPublicId != null && !oldPublicId.equals(newPublicId)) {
+                cloudinaryService.deleteAfterCommit(oldPublicId);
+            }
+
+            boolean nameChanged = !product.getName().equals(req.getName().trim());
+
+            productMapper.apply(product, req);
+
+            if (nameChanged) {
+                product.setSlug(generateUniqueSlug(
+                        SlugUtils.generateSlug(product.getName()),
+                        product.getId()
+                ));
+            }
+
+            mappingService.syncCategories(product, req);
+            propertyService.syncProductProperties(product, req);
+            variantService.syncVariants(product, req);
+
+            ProductEntity saved = productRepository.save(product);
+            ProductResponseDTO newProduct = buildResponse(saved.getId());
+
+            Map<String, Object> changed =
+                    CompareUtils.diff(oldProduct, newProduct);
+
+            if (!changed.isEmpty()) {
+                auditService.logAfterCommit(
+                        AuditAction.UPDATE,
+                        AuditEntityType.PRODUCT,
+                        saved.getId(),
+                        saved.getName(),
+                        null,
+                        null,
+                        changed
+                );
+            }
+
+            log.info("Updated Product id={}", saved.getId());
+
+            return buildResponse(saved.getId());
+        } catch (Exception e) {
+            if (newPublicId != null && !newPublicId.equals(oldPublicId)) {
+                cloudinaryService.deleteImage(newPublicId);
+            }
+            throw e;
+        }
     }
 
-    public ProductResponseDTO getBySlug(String slug) {
-        ProductEntity product = productRepository.findBySlugWithCore(slug)
-                .filter(pr -> pr.getStatus() != ProductStatus.DELETED)
-                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy sản phẩm"));
+    @Override
+    public ProductResponseDTO getById(Long id) {
+        ProductEntity product = getActiveProduct(id);
 
         List<ProductVariantEntity> variants =
-                variantRepository.findVariantsByProductId(product.getId());
-
+                variantRepository.findAllByProductIdAndStatusNot(product.getId(), VariantStatus.DELETED);
 
         List<ProductPropertyValueEntity> productPropertyValue =
                 productPropertyValueRepository.findPropertiesByProductId(product.getId());
@@ -239,6 +304,7 @@ public class ProductServiceImpl implements ProductService {
         return productMapper.toDTO(product, variants, productPropertyValue);
     }
 
+    @Override
     @Transactional
     public void delete(Long id) {
         ProductEntity product = getActiveProduct(id);
@@ -247,6 +313,95 @@ public class ProductServiceImpl implements ProductService {
         product.setMainImage(null);
         product.setImagePublicId(null);
         product.setStatus(ProductStatus.DELETED);
+
+        auditService.logAfterCommit(
+                AuditAction.DELETE,
+                AuditEntityType.PRODUCT,
+                product.getId(),
+                product.getName(),
+                null,
+                null,
+                null
+        );
+
         log.info("Soft deleted Product id={}", id);
+    }
+
+    @Override
+    @Transactional
+    public ProductResponseDTO restore(Long id) {
+        ProductEntity product = productRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy sản phẩm"));
+
+        if (product.getStatus() != ProductStatus.DELETED) {
+            throw new BadRequestException("Sản phẩm chưa bị xóa");
+        }
+
+        validateName(product.getName(), product.getId());
+
+        product.setStatus(ProductStatus.ACTIVE);
+        product.setSlug(generateUniqueSlug(product.getSlug(), product.getId()));
+
+        ProductEntity saved = productRepository.save(product);
+        ProductResponseDTO newProduct = buildResponse(saved.getId());
+
+        auditService.logAfterCommit(
+                AuditAction.RESTORE,
+                AuditEntityType.PRODUCT,
+                product.getId(),
+                product.getName(),
+                null,
+                null,
+                null
+        );
+
+        log.info("Restored Product id={}", id);
+
+        return newProduct;
+    }
+
+    @Override
+    @Transactional
+    public void updateStatus(Long id, ProductStatus status) {
+        ProductEntity product = getActiveProduct(id);
+
+        ProductResponseDTO oldProduct = buildResponse(product.getId());
+
+        product.setStatus(status);
+
+        ProductEntity saved = productRepository.save(product);
+
+        ProductResponseDTO newProduct = buildResponse(saved.getId());
+
+        Map<String, Object> changed =
+                CompareUtils.diff(oldProduct, newProduct);
+
+        if (!changed.isEmpty()) {
+            auditService.logAfterCommit(
+                    AuditAction.UPDATE,
+                    AuditEntityType.PRODUCT,
+                    saved.getId(),
+                    saved.getName(),
+                    null,
+                    null,
+                    changed
+            );
+        }
+
+        log.info("Changed status Product id={} to {}", id, status);
+    }
+
+    @Override
+    public ProductResponseDTO getBySlug(String slug) {
+        ProductEntity product = productRepository.findBySlugAndStatusWithCore(slug, ProductStatus.ACTIVE)
+                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy sản phẩm"));
+
+        List<ProductVariantEntity> variants =
+                variantRepository.findAllByProductIdAndStatusNot(product.getId(), VariantStatus.DELETED);
+
+        List<ProductPropertyValueEntity> productPropertyValue =
+                productPropertyValueRepository.findPropertiesByProductId(product.getId());
+
+        return productMapper.toDTO(product, variants, productPropertyValue);
     }
 }

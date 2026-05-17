@@ -53,12 +53,18 @@ public class SecurityConfig {
                         .accessDeniedHandler(accessDeniedHandler)
                 )
                 .authorizeHttpRequests(auth -> auth
-                                .requestMatchers( "/auth/**").permitAll()
-                                .requestMatchers(HttpMethod.GET, "/products/**").permitAll()
-                                .requestMatchers(HttpMethod.GET, "/categories/**").permitAll()
-                                .requestMatchers(HttpMethod.GET, "/properties/**").permitAll()
-                                .requestMatchers( "/", "/login", "/oauth2/**").permitAll()
-                                .anyRequest().authenticated()
+                        // public auth
+                        .requestMatchers("/auth/**", "/oauth2/**").permitAll()
+
+                        // public catalog
+                        .requestMatchers(HttpMethod.GET, "/categories/**").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/products/**").permitAll()
+
+                        // admin secured
+                        .requestMatchers("/admin/**").hasRole("ADMIN")
+//                        .requestMatchers("/admin/**").hasAuthority("ACCESS_ADMIN_PANEL")
+
+                        .anyRequest().denyAll()
                 )
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class)
