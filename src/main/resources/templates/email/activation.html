@@ -14,9 +14,13 @@
     font-family:Arial,sans-serif;
 ">
 
-<table style="
+<table
+        role="presentation"
+        width="100%"
+       cellpadding="0"
+       cellspacing="0"
+        style="
     width:100%;
-    border-collapse:collapse;
     background:#faf7f8;
     padding:24px 0;
 ">
@@ -24,17 +28,26 @@
     <tr>
         <td style="padding:24px 16px">
 
-            <table style="
-    max-width:600px;
-    margin:0px auto;
-    border-collapse:collapse;
-    background:#ffffff;
-    overflow:hidden;
-">
+            <table
+                    role="presentation"
+                    width="600"
+                    cellpadding="0"
+                    cellspacing="0"
+                    border="0"
+                    style="
+                width:100%;
+                max-width:600px;
+                margin:0 auto;
+                border-collapse:collapse;
+                background:#ffffff;
+                overflow:hidden;
+            ">
 
                 <!-- HEADER -->
                 <tr>
-                    <td th:replace="email/fragments/header :: header"></td>
+                    <td>
+                        <div th:replace="~{email/fragments/header :: header}"></div>
+                    </td>
                 </tr>
 
                 <!-- TITLE -->
@@ -67,12 +80,12 @@
 
                         <p>
                             Xin chào
-                            <strong style="color:#6e5b00;" th:text="${name}"></strong>,
+                            <strong style="color:#9f7a37;" th:text="${name}"></strong>,
                         </p>
 
                         <p>
                             Cảm ơn bạn đã đăng ký tài khoản tại
-                            <strong style="color:#6e5b00;">LA HOA</strong>.
+                            <strong style="color:#9f7a37;">LA HOA</strong>.
                         </p>
 
                         <p>
@@ -80,12 +93,13 @@
                             thế giới hoa nghệ thuật của chúng mình.
                         </p>
 
-                        <div style="margin:32px 0;">
+                        <div style="margin:24px 0;">
 
                             <a th:href="${link}"
                                target="_blank"
                                style="
-                background:#AB886D;
+                display:inline-block;
+                background:#9f7a37;
                 color:#fff;
                 text-decoration:none;
                 padding:10px 30px;
@@ -110,7 +124,7 @@
 
                         <p>
                             Trân trọng,<br/>
-                            <strong style="color:#6e5b00;">LA HOA Team</strong>
+                            <strong style="color:#9f7a37;">LA HOA Team</strong>
                         </p>
 
                     </td>
@@ -118,7 +132,9 @@
 
                 <!-- FOOTER -->
                 <tr>
-                    <td th:replace="email/fragments/footer :: footer"></td>
+                    <td>
+                        <div th:replace="~{email/fragments/footer :: footer}"></div>
+                    </td>
                 </tr>
 
             </table>

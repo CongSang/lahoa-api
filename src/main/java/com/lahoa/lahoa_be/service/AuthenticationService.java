@@ -19,11 +19,6 @@ public interface AuthenticationService {
     AuthResponseDTO authenticate(AuthRequestDTO authRequestDTO);
 
     /**
-     * Kích hoạt tài khoản
-     */
-    boolean activate(String activationToken);
-
-    /**
      * Lấy profile hiện tại
      */
     UserPrincipal getCurrentProfile();

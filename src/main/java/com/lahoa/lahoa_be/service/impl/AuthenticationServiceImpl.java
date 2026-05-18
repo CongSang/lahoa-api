@@ -6,11 +6,13 @@ import com.lahoa.lahoa_be.common.enums.AuthProvider;
 import com.lahoa.lahoa_be.common.enums.Status;
 import com.lahoa.lahoa_be.dto.request.UserRequestDTO;
 import com.lahoa.lahoa_be.dto.response.UserResponseDTO;
+import com.lahoa.lahoa_be.entity.ActivationTokenEntity;
 import com.lahoa.lahoa_be.entity.RefreshTokenEntity;
 import com.lahoa.lahoa_be.entity.RoleEntity;
 import com.lahoa.lahoa_be.exception.BadRequestException;
 import com.lahoa.lahoa_be.exception.UnauthorizedException;
 import com.lahoa.lahoa_be.mapper.UserMapper;
+import com.lahoa.lahoa_be.repository.ActivationTokenRepository;
 import com.lahoa.lahoa_be.repository.RoleRepository;
 import com.lahoa.lahoa_be.securiry.UserPrincipal;
 import com.lahoa.lahoa_be.dto.request.AuthRequestDTO;
@@ -22,10 +24,7 @@ import com.lahoa.lahoa_be.util.SnowflakeIdGenerator;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.security.authentication.AnonymousAuthenticationToken;
-import org.springframework.security.authentication.AuthenticationManager;
-import org.springframework.security.authentication.BadCredentialsException;
-import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.authentication.*;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -34,6 +33,8 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.Instant;
+import java.time.temporal.ChronoUnit;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -52,41 +53,96 @@ public class AuthenticationServiceImpl implements AuthenticationService {
     private final SnowflakeIdGenerator idGenerator;
     private final RoleRepository roleRepository;
     private final AuditLogService auditService;
+    private final ActivationTokenService activationTokenService;
+    private final ActivationTokenRepository activationTokenRepository;
 
     @Value("${app.activation.url}")
     private String backendURL;
 
+    private void sendActivationEmail(UserEntity user) {
+        Optional<ActivationTokenEntity> existing =
+                activationTokenService.findValidToken(user.getId());
+
+        ActivationTokenEntity token;
+
+        if (existing.isPresent()) {
+            token = existing.get();
+
+            boolean cooldown =
+                    token.getLastSentAt()
+                            .isAfter(
+                                    Instant.now()
+                                            .minus(5, ChronoUnit.MINUTES)
+                            );
+
+            if (cooldown) {
+                return;
+            }
+
+            token.setLastSentAt(Instant.now());
+            activationTokenRepository.save(token);
+        } else {
+            token = activationTokenService.create(user);
+        }
+
+        String activationLink =
+                backendURL +
+                        "/api/auth/activate?token="
+                        + token.getToken();
+
+        mailService.sendActivationEmail(
+                user.getEmail(),
+                user.getFullName(),
+                activationLink
+        );
+
+        log.info(
+                "Đã gửi email kích hoạt cho {}",
+                user.getEmail()
+        );
+    }
+
     @Override
     @Transactional
     public UserResponseDTO register(UserRequestDTO userDTO) {
-        if (userRepository.existsByEmail(userDTO.getEmail())) {
+        Optional<UserEntity> existing =
+                userRepository.findByEmail(userDTO.getEmail());
+
+        if (existing.isPresent()) {
+            UserEntity user = existing.get();
+
+            if (user.getStatus() == Status.INACTIVE) {
+
+                sendActivationEmail(user);
+
+                throw new BadRequestException(
+                        "Tài khoản chưa được kích hoạt. Vui lòng kiểm tra email xác thực."
+                );
+            }
+
             log.warn("<<< Đăng ký thất bại: Email {} đã tồn tại trong hệ thống", userDTO.getEmail());
-            throw new BadRequestException("Email này đã được sử dụng. Vui lòng chọn email khác!");
+            throw new BadRequestException("Email này đã được sử dụng.");
         }
 
         UserEntity newUser = userMapper.toEntity(userDTO);
 
         RoleEntity defaultRole = roleRepository.findByName("CUSTOMER")
                 .orElseThrow(() -> new RuntimeException("Không tìm thấy Role mặc định trong hệ thống!"));
-        Set<RoleEntity> roles = new HashSet<>();
-        roles.add(defaultRole);
+
         Long id = idGenerator.nextId();
+
         newUser.setId(id);
         newUser.setPassword(passwordEncoder.encode(userDTO.getPassword()));
-        newUser.setActivationToken(UUID.randomUUID().toString());
         newUser.setProvider(AuthProvider.LOCAL);
-        newUser.setRoles(roles);
+        newUser.setRoles(Set.of(defaultRole));
         newUser.setStatus(Status.INACTIVE);
-        newUser = userRepository.save(newUser);
-        log.info("<<< Đăng ký thành công: Email: {} với ID: {}", userDTO.getEmail(), id);
 
-        //send activation email
-        String activationLink = backendURL + "/api/auth/activate?token=" + newUser.getActivationToken();
-        mailService.sendActivationEmail(
-                newUser.getEmail(),
-                newUser.getFullName(),
-                activationLink
-        );
+        newUser = userRepository.save(newUser);
+
+        sendActivationEmail(newUser);
+
+        log.info("<<< Đăng ký thành công: Email: {} - ID: {}", userDTO.getEmail(), id);
+
         return userMapper.toDTO(newUser);
     }
 
@@ -133,39 +189,44 @@ public class AuthenticationServiceImpl implements AuthenticationService {
     }
 
     @Override
-    public boolean activate(String activationToken) {
-        return userRepository.findByActivationToken(activationToken)
-                .map(profile -> {
-                    profile.setStatus(Status.ACTIVE);
-                    userRepository.save(profile);
-                    return  true;
-                })
-                .orElse(false);
-    }
-
-    @Override
-    public AuthResponseDTO authenticate(AuthRequestDTO authRequestDTO) throws BadCredentialsException {
+    public AuthResponseDTO authenticate(AuthRequestDTO authRequestDTO) {
         Optional<UserEntity> userOptional = userRepository.findByEmail(authRequestDTO.getEmail());
         UserEntity user;
 
         if(userOptional.isPresent()) {
             user = userOptional.get();
-            if(user.getPassword().isEmpty() && user.getProvider() == AuthProvider.GOOGLE) {
+            if(user.getPassword() == null
+                    || user.getPassword().isBlank() &&
+            user.getProvider() == AuthProvider.GOOGLE) {
                 log.warn("<<< Đăng nhập thất bại: Email: {} chưa có mật khẩu do đăng nhập qua Google", authRequestDTO.getEmail());
                 throw new BadRequestException(
-                        "Tài khoản này được tạo qua Google. Vui lòng đăng nhập bằng Google và vào cài đặt để thiết lập mật khẩu");
+                        "Tài khoản này được tạo qua Google. Vui lòng đăng nhập bằng Google và vào cài đặt để thiết lập mật khẩu.");
             }
         } else {
             log.warn("<<< Đăng nhập thất bại: Email: {} chưa chưa đăng kí", authRequestDTO.getEmail());
             throw  new UsernameNotFoundException("Tài khoản chưa được đăng ký!");
         }
 
-        authenticationManager.authenticate(
-                new UsernamePasswordAuthenticationToken(
-                        authRequestDTO.getEmail(),
-                        authRequestDTO.getPassword()
-                )
-        );
+        try {
+            authenticationManager.authenticate(
+                    new UsernamePasswordAuthenticationToken(
+                            authRequestDTO.getEmail(),
+                            authRequestDTO.getPassword()
+                    )
+            );
+        } catch (DisabledException ex) {
+            sendActivationEmail(user);
+
+            log.warn("<<< Đăng nhập thất bại: Email: {} chưa được kích hoạt", authRequestDTO.getEmail());
+            throw new BadRequestException(
+                    "Tài khoản chưa được kích hoạt. Vui lòng kiểm tra email để xác thực."
+            );
+        } catch (BadCredentialsException ex) {
+            log.warn("<<< Đăng nhập thất bại: Email: {} Email hoặc mật khẩu không chính xác", authRequestDTO.getEmail());
+            throw new BadRequestException(
+                    "Email hoặc mật khẩu không chính xác."
+            );
+        }
 
         UserPrincipal principal = UserPrincipal.create(user);
         String jwtToken = jwtService.generateToken(principal);

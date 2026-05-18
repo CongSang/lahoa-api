@@ -40,6 +40,7 @@ public class MailServiceImpl implements MailService {
     }
 
     @Override
+    @Async
     public void sendActivationEmail(
             String to,
             String name,
@@ -60,6 +61,7 @@ public class MailServiceImpl implements MailService {
             MimeMessageHelper helper =
                     new MimeMessageHelper(message, true, "UTF-8");
 
+            helper.setFrom(fromEmail);
             helper.setTo(to);
             helper.setSubject("Xác thực tài khoản LA HOA");
             helper.setText(html, true);
@@ -67,7 +69,7 @@ public class MailServiceImpl implements MailService {
             mailSender.send(message);
 
         } catch (Exception e) {
-            throw new RuntimeException(e);
+            throw new RuntimeException(e.getMessage());
         }
     }
 

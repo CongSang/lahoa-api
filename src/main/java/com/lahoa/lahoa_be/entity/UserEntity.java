@@ -1,12 +1,12 @@
 package com.lahoa.lahoa_be.entity;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import com.fasterxml.jackson.databind.ser.std.ToStringSerializer;
 import com.lahoa.lahoa_be.common.enums.AuthProvider;
 import com.lahoa.lahoa_be.common.enums.Status;
 import jakarta.persistence.*;
 import lombok.*;
-import net.minidev.json.annotate.JsonIgnore;
 
 import java.util.HashSet;
 import java.util.List;

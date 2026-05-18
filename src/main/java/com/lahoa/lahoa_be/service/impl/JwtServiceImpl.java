@@ -33,6 +33,12 @@ public class JwtServiceImpl implements JwtService {
                 .toList();
         extraClaims.put("roles", roles);
 
+        List<String> permissions = userDetails.getAuthorities().stream()
+                .map(GrantedAuthority::getAuthority).filter(Objects::nonNull)
+                .filter(auth -> !auth.startsWith("ROLE_"))
+                .toList();
+        extraClaims.put("permissions", permissions);
+
         return Jwts.builder()
                 .header()
                 .add("typ", "JWT")

@@ -14,9 +14,11 @@
     font-family:Arial,sans-serif;
 ">
 
-<table style="
+<table width="100%"
+       cellpadding="0"
+       cellspacing="0"
+       style="
     width:100%;
-    border-collapse:collapse;
     background:#faf7f8;
     padding:24px 0;
 ">
@@ -24,17 +26,25 @@
     <tr>
         <td style="padding:24px 16px">
 
-            <table style="
-    max-width:600px;
-    margin:0px auto;
-    border-collapse:collapse;
-    background:#ffffff;
-    overflow:hidden;
+            <table role="presentation"
+                   width="600"
+                   cellpadding="0"
+                   cellspacing="0"
+                   border="0"
+                   style="
+                width:100%;
+                max-width:600px;
+                margin:0 auto;
+                border-collapse:collapse;
+                background:#ffffff;
+                overflow:hidden;
 ">
 
                 <!-- HEADER -->
                 <tr>
-                    <td th:replace="email/fragments/header :: header"></td>
+                    <td>
+                        <div th:replace="~{email/fragments/header :: header}"></div>
+                    </td>
                 </tr>
 
                 <!-- TITLE -->
@@ -65,7 +75,7 @@
     line-height:1.5
 ">
 
-                        <p>Xin chào <b th:text="${name}"></b>,</p>
+                        <p>Xin chào <strong style="color:#9f7a37;" th:text="${name}"></strong>,</p>
 
                         <p>
                             Bó hoa của bạn đã được giao thành công.
@@ -82,19 +92,20 @@
                             <p><b>Thời gian giao:</b> <span th:text="${deliveredAt}"></span></p>
                         </div>
 
-                        <div style="margin:32px 0;">
+                        <div style="margin:24px 0;">
                             <a th:href="${reviewLink}"
                                target="_blank"
                                style="
-               background:#AB886D;
-               color:white;
-               padding:10px 30px;
-               border-radius:2px;
-               text-decoration:none;
-               font-weight:600;
-               font-size:16px;
-               line-height:20px;
-               cursor: pointer;">
+                                   display:inline-block;
+                                   background:#9f7a37;
+                                   color:white;
+                                   padding:10px 30px;
+                                   border-radius:2px;
+                                   text-decoration:none;
+                                   font-weight:600;
+                                   font-size:16px;
+                                   line-height:20px;
+                                   cursor: pointer;">
                                 Đánh giá trải nghiệm
                             </a>
                         </div>
@@ -109,7 +120,9 @@
 
                 <!-- FOOTER -->
                 <tr>
-                    <td th:replace="email/fragments/footer :: footer"></td>
+                    <td>
+                        <div th:replace="~{email/fragments/footer :: footer}"></div>
+                    </td>
                 </tr>
 
             </table>

@@ -1,19 +1,26 @@
 package com.lahoa.lahoa_be.controller;
 
+import com.lahoa.lahoa_be.common.enums.ActivationStatus;
 import com.lahoa.lahoa_be.dto.request.UserRequestDTO;
 import com.lahoa.lahoa_be.dto.request.AuthRequestDTO;
 import com.lahoa.lahoa_be.dto.response.AuthResponseDTO;
 import com.lahoa.lahoa_be.dto.response.UserResponseDTO;
 import com.lahoa.lahoa_be.securiry.UserPrincipal;
+import com.lahoa.lahoa_be.service.ActivationTokenService;
 import com.lahoa.lahoa_be.service.AuthenticationService;
 import com.lahoa.lahoa_be.service.RefreshTokenService;
+import jakarta.servlet.http.Cookie;
+import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
+
+import java.io.IOException;
 
 @Slf4j
 @RestController
@@ -22,7 +29,11 @@ import org.springframework.web.bind.annotation.*;
 public class AuthenticationController {
 
     private final AuthenticationService authService;
+    private final ActivationTokenService activationTokenService;
     private final RefreshTokenService refreshTokenService;
+
+    @Value("${app.activation.frontend.url}")
+    private String frontendURL;
 
     @PostMapping("/register")
     public ResponseEntity<UserResponseDTO> register(@Valid @RequestBody UserRequestDTO userDTO) {
@@ -32,14 +43,27 @@ public class AuthenticationController {
     }
 
     @GetMapping("/activate")
-    public ResponseEntity<String> activate(@RequestParam String token) {
-        boolean isActivated = authService.activate(token);
+    public void activate(
+            @RequestParam String token,
+            HttpServletResponse response
+    ) throws IOException {
+        ActivationStatus status =
+                activationTokenService.activate(token);
 
-        if(isActivated) {
-            return ResponseEntity.ok("Profile activated successfully");
-        } else {
-            return ResponseEntity.status(HttpStatus.NOT_FOUND).body("Activation token not found or already used");
-        }
+        Cookie cookie = new Cookie(
+                "verify-account",
+                status.name()
+        );
+
+        cookie.setPath("/");
+        cookie.setHttpOnly(false);
+        cookie.setMaxAge(30);
+
+        response.addCookie(cookie);
+
+        response.sendRedirect(
+                frontendURL + "/verify-account"
+        );
     }
 
     @PostMapping("/login")
