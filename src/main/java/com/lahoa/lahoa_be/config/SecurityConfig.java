@@ -59,7 +59,6 @@ public class SecurityConfig {
                         // public catalog
                         .requestMatchers(HttpMethod.GET, "/categories/**").permitAll()
                         .requestMatchers(HttpMethod.GET, "/products/**").permitAll()
-                        .requestMatchers(HttpMethod.GET, "/properties/**").permitAll()
 
                         // admin secured
                         .requestMatchers("/admin/**").hasAuthority("ACCESS_ADMIN_PANEL")
