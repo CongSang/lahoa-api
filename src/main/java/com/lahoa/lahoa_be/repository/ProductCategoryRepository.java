@@ -51,7 +51,7 @@ public interface ProductCategoryRepository extends JpaRepository<ProductCategory
 
     boolean existsByParentId(Long parentId);
 
-    List<ProductCategoryEntity> findByParentIsNullAndStatusNot(Status status);
+    List<ProductCategoryEntity> findByParentIsNullAndStatus(Status status);
 
     List<ProductCategoryEntity> findAllByStatus(Status status);
 

@@ -98,7 +98,7 @@ public class ProductCategoryServiceImpl implements ProductCategoryService {
     // Admin: Lấy tất cả danh mục cha cao nhất
     @Override
     public List<DropdownResponseDTO> getCategoryParent() {
-        List<ProductCategoryEntity> rootCategories = categoryRepository.findByParentIsNullAndStatusNot(Status.DELETED);
+        List<ProductCategoryEntity> rootCategories = categoryRepository.findByParentIsNullAndStatus(Status.ACTIVE);
         return rootCategories.stream().map(categoryMapper::toDropdown).collect(Collectors.toList());
     }
 
