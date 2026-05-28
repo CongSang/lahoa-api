@@ -1,33 +1,23 @@
 package com.lahoa.lahoa_be.service.impl;
 
+import com.lahoa.lahoa_be.common.enums.CodePrefix;
 import com.lahoa.lahoa_be.common.enums.Status;
-import com.lahoa.lahoa_be.dto.filter.MaterialFilterRequestDTO;
 import com.lahoa.lahoa_be.dto.request.MaterialRequestDTO;
 import com.lahoa.lahoa_be.dto.response.MaterialResponseDTO;
-import com.lahoa.lahoa_be.dto.response.PagedResponseDTO;
 import com.lahoa.lahoa_be.entity.MaterialCategoryEntity;
 import com.lahoa.lahoa_be.entity.MaterialEntity;
 import com.lahoa.lahoa_be.exception.BadRequestException;
 import com.lahoa.lahoa_be.exception.ResourceNotFoundException;
 import com.lahoa.lahoa_be.mapper.MaterialMapper;
-import com.lahoa.lahoa_be.mapper.PagedMapper;
 import com.lahoa.lahoa_be.repository.MaterialCategoryRepository;
 import com.lahoa.lahoa_be.repository.MaterialRepository;
 import com.lahoa.lahoa_be.service.CloudinaryService;
+import com.lahoa.lahoa_be.service.CodeGeneratorService;
 import com.lahoa.lahoa_be.service.MaterialService;
-import com.lahoa.lahoa_be.specification.MaterialSpecification;
-import com.lahoa.lahoa_be.util.SlugUtils;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageRequest;
-import org.springframework.data.domain.Pageable;
-import org.springframework.data.domain.Sort;
-import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-
-import java.util.List;
 
 @Slf4j
 @Service
@@ -37,8 +27,8 @@ public class MaterialServiceImpl implements MaterialService {
     private final MaterialRepository materialRepository;
     private final MaterialCategoryRepository categoryRepository;
     private final MaterialMapper materialMapper;
-    private final PagedMapper pagedMapper;
     private final CloudinaryService cloudinaryService;
+    private final CodeGeneratorService codeService;
 
     private MaterialCategoryEntity getCategory( Long id) {
         return categoryRepository.findById(id)
@@ -64,64 +54,29 @@ public class MaterialServiceImpl implements MaterialService {
         return material;
     }
 
-    private String generateUniqueCode(String base, Long excludeId) {
-        String code = base;
-        int i = 1;
-
-        while (materialRepository.existsByCodeAndIdNot(code, excludeId)) {
-            code = base + "-" + i++;
-        }
-
-        return code;
-    }
-
-    @Override
-    @Transactional(readOnly = true)
-    public PagedResponseDTO<MaterialResponseDTO> list(MaterialFilterRequestDTO filter) {
-        Specification<MaterialEntity> spec = MaterialSpecification.filter(filter);
-
-        Sort sort = filter.getSortOrder().equalsIgnoreCase(Sort.Direction.ASC.name())
-                ? Sort.by(filter.getSortField()).ascending()
-                : Sort.by(filter.getSortField()).descending();
-
-        Pageable pageable = PageRequest.of(
-                filter.getPage(),
-                filter.getSize(),
-                sort
-        );
-
-        Page<MaterialEntity> categoryPaged = materialRepository.findAll(spec, pageable);
-
-        List<MaterialResponseDTO> dtoList = categoryPaged.getContent()
-                .stream().map(materialMapper::toDTO).toList();
-
-        return pagedMapper.toDTO(categoryPaged, dtoList);
-    }
-
-    @Override
-    public MaterialResponseDTO getById(Long id) {
-        return materialMapper.toDTO(getEntity(id));
-    }
-
     @Override
     @Transactional
     public MaterialResponseDTO create(MaterialRequestDTO req) {
         MaterialCategoryEntity category =
                 getCategory(req.getCategoryId());
 
-        MaterialEntity entity = materialMapper.toEntity(req);
+        try {
+            MaterialEntity entity = materialMapper.toEntity(req);
 
-        String code = generateUniqueCode(
-                SlugUtils.generateSlug(req.getName()).toUpperCase(),
-                null
-        );
+            entity.setCode(codeService.next(CodePrefix.MAT));
+            entity.setCategory(category);
 
-        entity.setCode(code);
-        entity.setCategory(category);
+            MaterialEntity saved = materialRepository.save(entity);
 
-        materialRepository.save(entity);
+            log.info("Created Material id={}", saved.getId());
 
-        return materialMapper.toDTO(entity);
+            return materialMapper.toDTO(saved);
+        } catch (Exception e) {
+            if (req.getThumbnailPublicId() != null) {
+                cloudinaryService.deleteImage(req.getThumbnailPublicId());
+            }
+            throw e;
+        }
     }
 
     @Override
@@ -129,21 +84,31 @@ public class MaterialServiceImpl implements MaterialService {
     public MaterialResponseDTO update(Long id, MaterialRequestDTO req) {
         MaterialEntity entity = getEntity(id);
 
-        String code = generateUniqueCode(
-                SlugUtils.generateSlug(req.getName()).toUpperCase(),
-                id
-        );
+        String oldPublicId = entity.getThumbnailPublicId();
+        String newPublicId = req.getThumbnailPublicId();
 
-        entity.setCode(code);
-        entity.setCategory(getCategory(req.getCategoryId()));
-        entity.setName(req.getName());
-        entity.setUnit(req.getUnit());
-        entity.setThumbnail(req.getThumbnail());
-        entity.setDefaultCost(req.getDefaultCost());
-        entity.setLowStockThreshold(req.getLowStockThreshold());
-        entity.setStatus(req.getStatus());
+        try {
+            if (oldPublicId != null && !oldPublicId.equals(newPublicId)) {
+                cloudinaryService.deleteAfterCommit(oldPublicId);
+            }
 
-        return materialMapper.toDTO(entity);
+            entity.setCategory(getCategory(req.getCategoryId()));
+            entity.setName(req.getName());
+            entity.setUnit(req.getUnit());
+            entity.setThumbnail(req.getThumbnail());
+            entity.setThumbnailPublicId(req.getThumbnailPublicId());
+            entity.setLowStockThreshold(req.getLowStockThreshold());
+            entity.setStatus(req.getStatus());
+
+            log.info("Updated Material id={}", id);
+
+            return materialMapper.toDTO(materialRepository.save(entity));
+        } catch (Exception e) {
+            if (newPublicId != null && !newPublicId.equals(oldPublicId)) {
+                cloudinaryService.deleteImage(newPublicId);
+            }
+            throw e;
+        }
     }
 
     @Override
@@ -169,12 +134,6 @@ public class MaterialServiceImpl implements MaterialService {
             throw new BadRequestException("Nguyên liệu chưa bị xóa");
         }
 
-        String code = generateUniqueCode(
-                SlugUtils.generateSlug(material.getName()).toUpperCase(),
-                id
-        );
-
-        material.setCode(code);
         material.setStatus(Status.ACTIVE);
 
         MaterialEntity saved = materialRepository.save(material);

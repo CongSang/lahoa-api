@@ -19,6 +19,7 @@ public class CategoryResponseDTO {
     @JsonSerialize(using = ToStringSerializer.class)
     private Long id;
     private String name;
+    private String code;
     private String slug;
     private String path;
     private String description;

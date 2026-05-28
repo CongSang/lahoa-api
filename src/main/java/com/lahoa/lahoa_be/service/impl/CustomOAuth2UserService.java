@@ -1,12 +1,14 @@
 package com.lahoa.lahoa_be.service.impl;
 
 import com.lahoa.lahoa_be.common.enums.AuthProvider;
+import com.lahoa.lahoa_be.common.enums.CodePrefix;
 import com.lahoa.lahoa_be.common.enums.Status;
 import com.lahoa.lahoa_be.entity.RoleEntity;
 import com.lahoa.lahoa_be.entity.UserEntity;
 import com.lahoa.lahoa_be.repository.RoleRepository;
 import com.lahoa.lahoa_be.repository.UserRepository;
 import com.lahoa.lahoa_be.securiry.UserPrincipal;
+import com.lahoa.lahoa_be.service.CodeGeneratorService;
 import com.lahoa.lahoa_be.util.SnowflakeIdGenerator;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.oauth2.client.userinfo.DefaultOAuth2UserService;
@@ -26,6 +28,7 @@ public class CustomOAuth2UserService extends DefaultOAuth2UserService {
     private final UserRepository userRepository;
     private final SnowflakeIdGenerator idGenerator;
     private final RoleRepository roleRepository;
+    private final CodeGeneratorService codeService;
 
     @Override
     public OAuth2User loadUser(OAuth2UserRequest userRequest) throws OAuth2AuthenticationException {
@@ -50,6 +53,7 @@ public class CustomOAuth2UserService extends DefaultOAuth2UserService {
             Set<RoleEntity> roles = new HashSet<>();
             roles.add(defaultRole);
             user.setId(idGenerator.nextId());
+            user.setCode(codeService.next(CodePrefix.USER));
             user.setEmail(email);
             user.setFullName(name);
             user.setStatus(Status.ACTIVE);

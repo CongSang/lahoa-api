@@ -53,6 +53,7 @@ public class ProductMapper {
 
         return ProductResponseDTO.builder()
                 .id(p.getId())
+                .code(p.getCode())
                 .name(p.getName())
                 .slug(p.getSlug())
                 .description(p.getDescription())

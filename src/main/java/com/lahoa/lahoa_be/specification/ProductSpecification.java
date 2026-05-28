@@ -38,7 +38,10 @@ public class ProductSpecification {
                 String keyword = "%" + req.getKeyword().toLowerCase() + "%";
 
                 predicates.add(
-                        cb.like(cb.lower(root.get("name")), keyword)
+                        cb.or(
+                                cb.like(cb.lower(root.get("name")), keyword),
+                                cb.like(cb.lower(root.get("code")), keyword)
+                        )
                 );
             }
 

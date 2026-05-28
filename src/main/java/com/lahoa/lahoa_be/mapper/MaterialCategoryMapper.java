@@ -26,7 +26,6 @@ public class MaterialCategoryMapper {
         if (entity == null) return null;
         return MaterialCategoryResponseDTO.builder()
                 .id(entity.getId())
-                .code(entity.getCode())
                 .name(entity.getName())
                 .description(entity.getDescription())
                 .status(entity.getStatus())

@@ -51,17 +51,6 @@ public class MaterialCategoryServiceImpl implements MaterialCategoryService {
         return materialRepository.countByCategoryId(id);
     }
 
-    private String generateUniqueCode(String base, Long excludeId) {
-        String code = base;
-        int i = 1;
-
-        while (categoryRepository.existsByCodeAndIdNot(code, excludeId)) {
-            code = base + "-" + i++;
-        }
-
-        return code;
-    }
-
     @Override
     @Transactional(readOnly = true)
     public PagedResponseDTO<MaterialCategoryResponseDTO> list(MaterialCategoryFilterRequestDTO filter) {
@@ -109,12 +98,6 @@ public class MaterialCategoryServiceImpl implements MaterialCategoryService {
     }
 
     @Override
-    public MaterialCategoryResponseDTO getById(Long id) {
-
-        return materialCategoryMapper.toDTO(getEntity(id), countMaterialByCategoryId(id));
-    }
-
-    @Override
     public List<DropdownResponseDTO> getDropdown() {
         List<MaterialCategoryEntity> categories = categoryRepository.findAllByStatus(Status.ACTIVE);
 
@@ -129,13 +112,6 @@ public class MaterialCategoryServiceImpl implements MaterialCategoryService {
 
         MaterialCategoryEntity entity = materialCategoryMapper.toEntity(req);
 
-        String code = generateUniqueCode(
-                SlugUtils.generateSlug(req.getName()).toUpperCase(),
-                null
-        );
-
-        entity.setCode(code);
-
         categoryRepository.save(entity);
 
         return materialCategoryMapper.toDTO(entity, 0L);
@@ -146,12 +122,6 @@ public class MaterialCategoryServiceImpl implements MaterialCategoryService {
     public MaterialCategoryResponseDTO update(Long id, MaterialCategoryRequestDTO req) {
         MaterialCategoryEntity entity = getEntity(id);
 
-        String code = generateUniqueCode(
-                SlugUtils.generateSlug(req.getName()).toUpperCase(),
-                id
-        );
-
-        entity.setCode(code);
         entity.setName(req.getName());
         entity.setDescription(req.getDescription());
         entity.setStatus(req.getStatus());
@@ -185,12 +155,6 @@ public class MaterialCategoryServiceImpl implements MaterialCategoryService {
             throw new BadRequestException("Danh mục chưa bị xóa");
         }
 
-        String code = generateUniqueCode(
-                SlugUtils.generateSlug(category.getName()).toUpperCase(),
-                id
-        );
-
-        category.setCode(code);
         category.setStatus(Status.ACTIVE);
 
         MaterialCategoryEntity saved = categoryRepository.save(category);

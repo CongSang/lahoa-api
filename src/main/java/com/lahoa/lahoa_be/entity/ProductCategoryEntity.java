@@ -36,6 +36,9 @@ public class ProductCategoryEntity extends BaseEntity {
     private String name;
 
     @Column(nullable = false, unique = true)
+    private String code;
+
+    @Column(nullable = false, unique = true)
     private String slug;
 
     private String path;

@@ -12,8 +12,6 @@ public interface MaterialCategoryService {
 
     PagedResponseDTO<MaterialCategoryResponseDTO> list(MaterialCategoryFilterRequestDTO filter);
 
-    MaterialCategoryResponseDTO getById(Long id);
-
     List<DropdownResponseDTO> getDropdown();
 
     MaterialCategoryResponseDTO create(MaterialCategoryRequestDTO req);

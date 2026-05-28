@@ -47,6 +47,7 @@ public class ProductCategoryMapper {
         if (entity == null) return null;
         CategoryResponseDTO.CategoryResponseDTOBuilder builder = CategoryResponseDTO.builder()
                 .id(entity.getId())
+                .code(entity.getCode())
                 .name(entity.getName())
                 .description(entity.getDescription())
                 .slug(entity.getSlug())

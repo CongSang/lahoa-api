@@ -6,7 +6,6 @@ import lombok.Data;
 @Data
 public class MaterialCategoryRequestDTO {
 
-    private String code;
     private String name;
     private String description;
     private Status status;

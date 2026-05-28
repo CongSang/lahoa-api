@@ -17,6 +17,7 @@ public class ProductResponseDTO {
     @JsonSerialize(using = ToStringSerializer.class)
     private Long id;
     private String name;
+    private String code;
     private String slug;
     private String description;
 

@@ -7,6 +7,7 @@ import lombok.*;
 import org.hibernate.annotations.SQLDelete;
 
 import java.math.BigDecimal;
+import java.util.List;
 
 @Entity
 @Table(name = "materials")
@@ -46,10 +47,12 @@ public class MaterialEntity extends BaseEntity {
     private String thumbnail;
     private String thumbnailPublicId;
 
-    private BigDecimal defaultCost;
-
+    @Column(name = "low_stock_threshold")
     private Integer lowStockThreshold;
 
     @Enumerated(EnumType.STRING)
     private Status status;
+
+    @OneToMany(mappedBy = "material")
+    private List<MaterialInventoryEntity> inventories;
 }

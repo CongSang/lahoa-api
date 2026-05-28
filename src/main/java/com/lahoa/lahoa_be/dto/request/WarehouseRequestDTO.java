@@ -12,7 +12,5 @@ public class WarehouseRequestDTO {
 
     private String address;
 
-    private String description;
-
     private Status status;
 }

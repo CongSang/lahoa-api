@@ -25,6 +25,9 @@ public class UserEntity extends BaseEntity {
     @JsonSerialize(using = ToStringSerializer.class)
     private Long id;
 
+    @Column(unique = true, nullable = false)
+    private String code;
+
     private String fullName;
 
     @Column(unique = true, nullable = false)

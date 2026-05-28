@@ -19,8 +19,6 @@ public class MaterialRequestDTO {
     private String thumbnail;
     private String thumbnailPublicId;
 
-    private BigDecimal defaultCost;
-
     private Integer lowStockThreshold;
 
     private Status status;

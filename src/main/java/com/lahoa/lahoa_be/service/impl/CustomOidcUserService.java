@@ -1,12 +1,14 @@
 package com.lahoa.lahoa_be.service.impl;
 
 import com.lahoa.lahoa_be.common.enums.AuthProvider;
+import com.lahoa.lahoa_be.common.enums.CodePrefix;
 import com.lahoa.lahoa_be.common.enums.Status;
 import com.lahoa.lahoa_be.entity.RoleEntity;
 import com.lahoa.lahoa_be.entity.UserEntity;
 import com.lahoa.lahoa_be.repository.RoleRepository;
 import com.lahoa.lahoa_be.repository.UserRepository;
 import com.lahoa.lahoa_be.securiry.UserPrincipal;
+import com.lahoa.lahoa_be.service.CodeGeneratorService;
 import com.lahoa.lahoa_be.util.SnowflakeIdGenerator;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.authentication.InternalAuthenticationServiceException;
@@ -27,6 +29,7 @@ public class CustomOidcUserService extends OidcUserService {
     private final UserRepository userRepository;
     private final SnowflakeIdGenerator idGenerator;
     private final RoleRepository roleRepository;
+    private final CodeGeneratorService codeService;
 
     @Override
     public OidcUser loadUser(OidcUserRequest userRequest) throws OAuth2AuthenticationException {
@@ -57,6 +60,7 @@ public class CustomOidcUserService extends OidcUserService {
         Set<RoleEntity> roles = new HashSet<>();
         roles.add(defaultRole);
         user.setId(idGenerator.nextId());
+        user.setCode(codeService.next(CodePrefix.USER));
         user.setEmail(oidcUser.getEmail());
         user.setFullName(oidcUser.getFullName());
         user.setUserImageUrl(oidcUser.getPicture());

@@ -7,7 +7,7 @@ import lombok.EqualsAndHashCode;
 
 @EqualsAndHashCode(callSuper = true)
 @Data
-public class MaterialFilterRequestDTO extends PagedRequestDTO {
+public class MaterialInventoryFilterRequestDTO extends PagedRequestDTO {
 
     private String keyword;
 
@@ -15,5 +15,9 @@ public class MaterialFilterRequestDTO extends PagedRequestDTO {
 
     private Status status;
 
-    private Long lowStock;
+    private Long warehouseId;
+
+    private Boolean lowStock;
+
+    private Boolean outOfStock;
 }

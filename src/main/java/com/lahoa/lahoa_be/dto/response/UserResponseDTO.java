@@ -17,6 +17,7 @@ public class UserResponseDTO {
 
     @JsonSerialize(using = ToStringSerializer.class)
     private Long id;
+    private Long code;
     private String fullName;
     private String email;
     private String phone;

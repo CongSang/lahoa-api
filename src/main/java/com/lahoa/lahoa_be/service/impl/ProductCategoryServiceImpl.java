@@ -2,6 +2,7 @@ package com.lahoa.lahoa_be.service.impl;
 
 import com.lahoa.lahoa_be.common.enums.AuditAction;
 import com.lahoa.lahoa_be.common.enums.AuditEntityType;
+import com.lahoa.lahoa_be.common.enums.CodePrefix;
 import com.lahoa.lahoa_be.common.enums.Status;
 import com.lahoa.lahoa_be.dto.filter.CategoryFilterRequestDTO;
 import com.lahoa.lahoa_be.dto.request.CategoryRequestDTO;
@@ -15,6 +16,7 @@ import com.lahoa.lahoa_be.repository.ProductCategoryMappingRepository;
 import com.lahoa.lahoa_be.repository.ProductCategoryRepository;
 import com.lahoa.lahoa_be.service.AuditLogService;
 import com.lahoa.lahoa_be.service.CloudinaryService;
+import com.lahoa.lahoa_be.service.CodeGeneratorService;
 import com.lahoa.lahoa_be.service.ProductCategoryService;
 import com.lahoa.lahoa_be.util.CompareUtils;
 import com.lahoa.lahoa_be.util.SlugUtils;
@@ -41,9 +43,11 @@ public class ProductCategoryServiceImpl implements ProductCategoryService {
     private final ProductCategoryMapper categoryMapper;
     private final ProductCategoryMappingRepository mappingRepository;
     private final PagedMapper pagedMapper;
+    private final CodeGeneratorService codeService;
 
     // Admin: Lấy danh sách
     @Override
+    @Transactional(readOnly = true)
     public PagedResponseDTO<CategoryResponseDTO> list(
             CategoryFilterRequestDTO filter
     ) {
@@ -184,6 +188,7 @@ public class ProductCategoryServiceImpl implements ProductCategoryService {
                 category.setParent(parent);
             }
 
+            category.setCode(codeService.next(CodePrefix.CATE));
             category.setPath(getFullCategoryPath(category));
 
             ProductCategoryEntity saved = categoryRepository.save(category);

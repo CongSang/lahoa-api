@@ -1,14 +1,10 @@
 package com.lahoa.lahoa_be.controller;
 
 import com.lahoa.lahoa_be.dto.filter.MaterialCategoryFilterRequestDTO;
-import com.lahoa.lahoa_be.dto.filter.MaterialFilterRequestDTO;
 import com.lahoa.lahoa_be.dto.request.MaterialCategoryRequestDTO;
-import com.lahoa.lahoa_be.dto.request.MaterialRequestDTO;
 import com.lahoa.lahoa_be.dto.response.DropdownResponseDTO;
 import com.lahoa.lahoa_be.dto.response.MaterialCategoryResponseDTO;
-import com.lahoa.lahoa_be.dto.response.MaterialResponseDTO;
 import com.lahoa.lahoa_be.dto.response.PagedResponseDTO;
-import com.lahoa.lahoa_be.repository.MaterialCategoryRepository;
 import com.lahoa.lahoa_be.service.MaterialCategoryService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -48,11 +44,6 @@ public class MaterialCategoryAdminController {
             @PathVariable Long id,
             @Valid @RequestBody MaterialCategoryRequestDTO request) {
         return ResponseEntity.ok(categoryService.update(id, request));
-    }
-
-    @GetMapping("/{id}")
-    public ResponseEntity<MaterialCategoryResponseDTO> getById(@PathVariable Long id) {
-        return ResponseEntity.ok(categoryService.getById(id));
     }
 
     @DeleteMapping("/{id}")

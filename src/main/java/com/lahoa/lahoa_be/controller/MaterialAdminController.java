@@ -1,9 +1,7 @@
 package com.lahoa.lahoa_be.controller;
 
-import com.lahoa.lahoa_be.dto.filter.MaterialFilterRequestDTO;
 import com.lahoa.lahoa_be.dto.request.MaterialRequestDTO;
 import com.lahoa.lahoa_be.dto.response.MaterialResponseDTO;
-import com.lahoa.lahoa_be.dto.response.PagedResponseDTO;
 import com.lahoa.lahoa_be.service.CloudinaryService;
 import com.lahoa.lahoa_be.service.MaterialService;
 import jakarta.validation.Valid;
@@ -22,12 +20,6 @@ public class MaterialAdminController {
     private final MaterialService materialService;
     private final CloudinaryService cloudinaryService;
 
-    @GetMapping
-    public ResponseEntity<PagedResponseDTO<MaterialResponseDTO>> list(
-            MaterialFilterRequestDTO filter) {
-        return ResponseEntity.ok(materialService.list(filter));
-    }
-
     @PostMapping
     public ResponseEntity<MaterialResponseDTO> create(
             @RequestBody MaterialRequestDTO req
@@ -40,11 +32,6 @@ public class MaterialAdminController {
             @PathVariable Long id,
             @Valid @RequestBody MaterialRequestDTO request) {
         return ResponseEntity.ok(materialService.update(id, request));
-    }
-
-    @GetMapping("/{id}")
-    public ResponseEntity<MaterialResponseDTO> getById(@PathVariable Long id) {
-        return ResponseEntity.ok(materialService.getById(id));
     }
 
     @DeleteMapping("/{id}")

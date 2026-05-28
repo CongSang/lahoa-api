@@ -29,9 +29,6 @@ public class MaterialResponseDTO {
     private String thumbnail;
     private String thumbnailPublicId;
 
-    @JsonSerialize(using = BigDecimalPlainSerializer.class)
-    private BigDecimal defaultCost;
-
     private Integer lowStockThreshold;
 
     private Status status;

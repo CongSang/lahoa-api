@@ -90,13 +90,6 @@ public class WarehouseServiceImpl implements WarehouseService {
         );
 
         Page<WarehouseEntity> whPaged = warehouseRepository.findAll(spec, pageable);
-        List<Long> ids =
-                whPaged.getContent()
-                        .stream()
-                        .map(
-                                WarehouseEntity::getId
-                        )
-                        .toList();
 
         List<WarehouseResponseDTO> dtoList = whPaged.getContent()
                 .stream().map(warehouseMapper::toDTO).toList();

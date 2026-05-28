@@ -1,9 +1,6 @@
 package com.lahoa.lahoa_be.service.impl;
 
-import com.lahoa.lahoa_be.common.enums.AuditAction;
-import com.lahoa.lahoa_be.common.enums.AuditEntityType;
-import com.lahoa.lahoa_be.common.enums.AuthProvider;
-import com.lahoa.lahoa_be.common.enums.Status;
+import com.lahoa.lahoa_be.common.enums.*;
 import com.lahoa.lahoa_be.dto.request.UserRequestDTO;
 import com.lahoa.lahoa_be.dto.response.UserResponseDTO;
 import com.lahoa.lahoa_be.entity.ActivationTokenEntity;
@@ -55,6 +52,7 @@ public class AuthenticationServiceImpl implements AuthenticationService {
     private final AuditLogService auditService;
     private final ActivationTokenService activationTokenService;
     private final ActivationTokenRepository activationTokenRepository;
+    private final CodeGeneratorService codeService;
 
     @Value("${app.activation.url}")
     private String backendURL;
@@ -96,10 +94,7 @@ public class AuthenticationServiceImpl implements AuthenticationService {
                 activationLink
         );
 
-        log.info(
-                "Đã gửi email kích hoạt cho {}",
-                user.getEmail()
-        );
+        log.info("Đã gửi email kích hoạt cho {}", user.getEmail());
     }
 
     @Override
@@ -132,6 +127,7 @@ public class AuthenticationServiceImpl implements AuthenticationService {
         Long id = idGenerator.nextId();
 
         newUser.setId(id);
+        newUser.setCode(codeService.next(CodePrefix.USER));
         newUser.setPassword(passwordEncoder.encode(userDTO.getPassword()));
         newUser.setProvider(AuthProvider.LOCAL);
         newUser.setRoles(Set.of(defaultRole));

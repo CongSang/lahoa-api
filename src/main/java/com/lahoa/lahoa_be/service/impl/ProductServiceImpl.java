@@ -31,7 +31,6 @@ import org.springframework.data.domain.Sort;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.transaction.support.TransactionSynchronizationManager;
 
 import java.math.BigDecimal;
 import java.util.List;
@@ -55,8 +54,10 @@ public class ProductServiceImpl implements ProductService {
     private final VariantService variantService;
     private final AuditLogService auditService;
     private final SnowflakeIdGenerator idGenerator;
+    private final CodeGeneratorService codeService;
 
     @Override
+    @Transactional(readOnly = true)
     public PagedResponseDTO<ProductResponseDTO> list(ProductFilterRequestDTO filter) {
         Specification<ProductEntity> spec = ProductSpecification.filter(filter);
 
@@ -201,6 +202,7 @@ public class ProductServiceImpl implements ProductService {
 
             Long id = idGenerator.nextId();
             product.setId(id);
+            product.setCode(codeService.next(CodePrefix.PROD));
             product.setStatus(ProductStatus.ACTIVE);
 
             mappingService.syncCategories(product, req);

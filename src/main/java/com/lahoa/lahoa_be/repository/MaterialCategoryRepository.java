@@ -12,6 +12,4 @@ public interface MaterialCategoryRepository extends
         JpaSpecificationExecutor<MaterialCategoryEntity> {
 
     List<MaterialCategoryEntity> findAllByStatus(Status status);
-
-    boolean existsByCodeAndIdNot(String code, Long id);
 }
