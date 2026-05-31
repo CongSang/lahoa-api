@@ -1,5 +1,7 @@
 package com.lahoa.lahoa_be.service.impl;
 
+import com.lahoa.lahoa_be.common.enums.AuditAction;
+import com.lahoa.lahoa_be.common.enums.AuditEntityType;
 import com.lahoa.lahoa_be.common.enums.Status;
 import com.lahoa.lahoa_be.dto.filter.MaterialCategoryFilterRequestDTO;
 import com.lahoa.lahoa_be.dto.request.MaterialCategoryRequestDTO;
@@ -13,9 +15,10 @@ import com.lahoa.lahoa_be.mapper.MaterialCategoryMapper;
 import com.lahoa.lahoa_be.mapper.PagedMapper;
 import com.lahoa.lahoa_be.repository.MaterialCategoryRepository;
 import com.lahoa.lahoa_be.repository.MaterialRepository;
+import com.lahoa.lahoa_be.service.AuditLogService;
 import com.lahoa.lahoa_be.service.MaterialCategoryService;
 import com.lahoa.lahoa_be.specification.MaterialCategorySpecification;
-import com.lahoa.lahoa_be.util.SlugUtils;
+import com.lahoa.lahoa_be.util.CompareUtils;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
@@ -39,6 +42,7 @@ public class MaterialCategoryServiceImpl implements MaterialCategoryService {
     private final MaterialRepository materialRepository;
     private final MaterialCategoryMapper materialCategoryMapper;
     private final PagedMapper pagedMapper;
+    private final AuditLogService auditService;
 
     private MaterialCategoryEntity getEntity(Long id) {
         return categoryRepository.findById(id)
@@ -114,19 +118,59 @@ public class MaterialCategoryServiceImpl implements MaterialCategoryService {
 
         categoryRepository.save(entity);
 
-        return materialCategoryMapper.toDTO(entity, 0L);
+        MaterialCategoryEntity saved = categoryRepository.save(entity);
+
+        MaterialCategoryResponseDTO newCat = materialCategoryMapper.toDTO(saved, 0L);
+
+        auditService.logAfterCommit(
+                AuditAction.CREATE,
+                AuditEntityType.MATERIAL_CATEGORY,
+                saved.getId(),
+                saved.getName(),
+                null,
+                newCat,
+                null
+        );
+
+        log.info("Created Material Category id={}", saved.getId());
+
+        return newCat;
     }
 
     @Override
     @Transactional
     public MaterialCategoryResponseDTO update(Long id, MaterialCategoryRequestDTO req) {
         MaterialCategoryEntity entity = getEntity(id);
+        Long countMaterial = countMaterialByCategoryId(id);
+
+        MaterialCategoryResponseDTO oldMaterial = materialCategoryMapper.toDTO(entity, countMaterial);
 
         entity.setName(req.getName());
         entity.setDescription(req.getDescription());
         entity.setStatus(req.getStatus());
 
-        return materialCategoryMapper.toDTO(entity, countMaterialByCategoryId(id));
+        MaterialCategoryEntity saved = categoryRepository.save(entity);
+
+        MaterialCategoryResponseDTO newCat = materialCategoryMapper.toDTO(saved, countMaterial);
+
+        Map<String, Object> changed =
+                CompareUtils.diff(oldMaterial, newCat);
+
+        if (!changed.isEmpty()) {
+            auditService.logAfterCommit(
+                    AuditAction.UPDATE,
+                    AuditEntityType.MATERIAL_CATEGORY,
+                    saved.getId(),
+                    saved.getName(),
+                    null,
+                    null,
+                    changed
+            );
+        }
+
+        log.info("Updated Material Category id={}", id);
+
+        return newCat;
     }
 
     @Override
@@ -141,6 +185,16 @@ public class MaterialCategoryServiceImpl implements MaterialCategoryService {
         }
 
         entity.setStatus(Status.DELETED);
+
+        auditService.logAfterCommit(
+                AuditAction.DELETE,
+                AuditEntityType.MATERIAL_CATEGORY,
+                entity.getId(),
+                entity.getName(),
+                null,
+                null,
+                null
+        );
 
         log.info("Soft deleted Material Category id={}", id);
     }
@@ -159,6 +213,16 @@ public class MaterialCategoryServiceImpl implements MaterialCategoryService {
 
         MaterialCategoryEntity saved = categoryRepository.save(category);
 
+        auditService.logAfterCommit(
+                AuditAction.RESTORE,
+                AuditEntityType.MATERIAL_CATEGORY,
+                saved.getId(),
+                saved.getName(),
+                null,
+                null,
+                null
+        );
+
         log.info("Restored Material Category id={}", id);
 
         return materialCategoryMapper.toDTO(saved, 0L);
@@ -168,6 +232,9 @@ public class MaterialCategoryServiceImpl implements MaterialCategoryService {
     @Transactional
     public MaterialCategoryResponseDTO updateStatus(Long id) {
         MaterialCategoryEntity entity = getEntity(id);
+        Long countMaterial = countMaterialByCategoryId(id);
+
+        MaterialCategoryResponseDTO oldMaterial = materialCategoryMapper.toDTO(entity, countMaterial);
 
         entity.setStatus(entity.getStatus()
                         == Status.ACTIVE
@@ -175,6 +242,27 @@ public class MaterialCategoryServiceImpl implements MaterialCategoryService {
                         : Status.ACTIVE
         );
 
-        return materialCategoryMapper.toDTO(entity, countMaterialByCategoryId(id));
+        MaterialCategoryEntity saved = categoryRepository.save(entity);
+
+        MaterialCategoryResponseDTO newCat = materialCategoryMapper.toDTO(saved, countMaterial);
+
+        Map<String, Object> changed =
+                CompareUtils.diff(oldMaterial, newCat);
+
+        if (!changed.isEmpty()) {
+            auditService.logAfterCommit(
+                    AuditAction.UPDATE,
+                    AuditEntityType.MATERIAL_CATEGORY,
+                    saved.getId(),
+                    saved.getName(),
+                    null,
+                    null,
+                    changed
+            );
+        }
+
+        log.info("Changed status Material Category id={} to {}", id, newCat.getStatus());
+
+        return newCat;
     }
 }

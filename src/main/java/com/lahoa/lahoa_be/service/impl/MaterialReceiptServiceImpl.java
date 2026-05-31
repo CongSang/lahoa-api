@@ -87,9 +87,7 @@ public class MaterialReceiptServiceImpl implements MaterialReceiptService {
 
         receipt.setTotalCost(total);
 
-        receiptRepository.save(receipt);
-
-        return receiptMapper.toDTO(receipt);
+        return receiptMapper.toDTO(receiptRepository.save(receipt));
     }
 
     @Override

@@ -1,6 +1,5 @@
 package com.lahoa.lahoa_be.controller;
 
-import com.lahoa.lahoa_be.dto.filter.MaterialCategoryFilterRequestDTO;
 import com.lahoa.lahoa_be.dto.filter.WarehouseFilterRequestDTO;
 import com.lahoa.lahoa_be.dto.request.WarehouseRequestDTO;
 import com.lahoa.lahoa_be.dto.response.DropdownResponseDTO;
@@ -26,6 +25,11 @@ public class WarehouseAdminController {
     public ResponseEntity<PagedResponseDTO<WarehouseResponseDTO>> list(
             WarehouseFilterRequestDTO filter) {
         return ResponseEntity.ok(warehouseService.list(filter));
+    }
+
+    @GetMapping("/dropdown")
+    public ResponseEntity<List<DropdownResponseDTO>> getDropdown() {
+        return ResponseEntity.ok(warehouseService.getDropdown());
     }
 
     @PostMapping

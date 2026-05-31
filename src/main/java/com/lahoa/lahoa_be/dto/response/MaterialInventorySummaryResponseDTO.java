@@ -10,7 +10,6 @@ import lombok.Data;
 
 import java.math.BigDecimal;
 
-@Builder
 @Data
 public class MaterialInventorySummaryResponseDTO {
 
@@ -47,4 +46,43 @@ public class MaterialInventorySummaryResponseDTO {
 
     @JsonSerialize(using = BigDecimalPlainSerializer.class)
     private BigDecimal costPrice;
+
+    public MaterialInventorySummaryResponseDTO(
+            Long id,
+            Long categoryId,
+            String categoryName,
+            String code,
+            String name,
+            MaterialUnit unit,
+            String thumbnail,
+            String thumbnailPublicId,
+            Status status,
+            Long warehouseCount,
+            Long onHand,
+            Long reserved,
+            Long available,
+            Long lowStockThreshold,
+            Boolean hasLowStockWarehouse,
+            Boolean hasOutOfStockWarehouse,
+            Double costPrice
+    ) {
+        this.id = id;
+        this.categoryId = categoryId;
+        this.categoryName = categoryName;
+        this.code = code;
+        this.name = name;
+        this.unit = unit;
+        this.thumbnail = thumbnail;
+        this.thumbnailPublicId = thumbnailPublicId;
+        this.status = status;
+
+        this.warehouseCount = warehouseCount != null ? warehouseCount.intValue() : 0;
+        this.onHand = onHand != null ? onHand.intValue() : 0;
+        this.reserved = reserved != null ? reserved.intValue() : 0;
+        this.available = available != null ? available.intValue() : 0;
+        this.lowStockThreshold = lowStockThreshold != null ? lowStockThreshold.intValue() : 0;
+        this.hasLowStockWarehouse = hasLowStockWarehouse != null ? hasLowStockWarehouse : false;
+        this.hasOutOfStockWarehouse = hasOutOfStockWarehouse != null ? hasOutOfStockWarehouse : false;
+        this.costPrice = costPrice != null ? BigDecimal.valueOf(costPrice) : BigDecimal.ZERO;
+    }
 }

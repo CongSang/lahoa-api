@@ -62,7 +62,12 @@ public class ProductCategoryServiceImpl implements ProductCategoryService {
         );
 
         Page<ProductCategoryEntity> categoriesPaged = categoryRepository
-                .findByFilters(filter.getKeyword(), filter.getStatus(), filter.getParentId(), pageable);
+                .findByFilters(
+                        filter.getKeyword(),
+                        filter.getStatus(),
+                        filter.getParentId(),
+                        pageable
+                );
 
         List<ProductCategoryEntity> categories = categoriesPaged.getContent();
 

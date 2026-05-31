@@ -1,13 +1,9 @@
 package com.lahoa.lahoa_be.mapper;
 
 import com.lahoa.lahoa_be.dto.request.MaterialCategoryRequestDTO;
-import com.lahoa.lahoa_be.dto.request.MaterialRequestDTO;
 import com.lahoa.lahoa_be.dto.response.DropdownResponseDTO;
 import com.lahoa.lahoa_be.dto.response.MaterialCategoryResponseDTO;
-import com.lahoa.lahoa_be.dto.response.MaterialResponseDTO;
 import com.lahoa.lahoa_be.entity.MaterialCategoryEntity;
-import com.lahoa.lahoa_be.entity.MaterialEntity;
-import com.lahoa.lahoa_be.entity.ProductCategoryEntity;
 import org.springframework.stereotype.Component;
 
 @Component

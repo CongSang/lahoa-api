@@ -5,5 +5,8 @@ public enum AuditEntityType {
     CATEGORY,
     USER,
     ORDER,
-    INVENTORY
+    INVENTORY,
+    MATERIAL,
+    MATERIAL_CATEGORY,
+    WAREHOUSE,
 }
