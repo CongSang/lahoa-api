@@ -10,8 +10,7 @@ import java.math.BigDecimal;
 @Component
 public class MaterialReceiptMapper {
 
-    public MaterialReceiptResponseDTO toDTO(MaterialReceiptEntity r) {
-
+    public MaterialReceiptResponseDTO toListDTO(MaterialReceiptEntity r) {
         return
                 MaterialReceiptResponseDTO
                         .builder()
@@ -20,6 +19,37 @@ public class MaterialReceiptMapper {
                         .supplier(r.getSupplier())
                         .note(r.getNote())
                         .warehouseName(r.getWarehouse().getName())
+                        .warehouseStatus(r.getWarehouse().getStatus())
+                        .totalCost(
+                                r.getDetails()
+                                        .stream()
+                                        .map(d -> d.getUnitCost()
+                                                .multiply(
+                                                        BigDecimal.valueOf(
+                                                                d.getQuantity()
+                                                        )
+                                                )
+                                        )
+                                        .reduce(
+                                                BigDecimal.ZERO,
+                                                BigDecimal::add
+                                        )
+                        )
+                        .itemCount(r.getDetails().size())
+                        .createdAt(r.getCreatedAt())
+                        .build();
+    }
+
+    public MaterialReceiptResponseDTO toDTO(MaterialReceiptEntity r) {
+        return
+                MaterialReceiptResponseDTO
+                        .builder()
+                        .id(r.getId())
+                        .code(r.getCode())
+                        .supplier(r.getSupplier())
+                        .note(r.getNote())
+                        .warehouseName(r.getWarehouse().getName())
+                        .warehouseStatus(r.getWarehouse().getStatus())
                         .totalCost(
                                 r.getDetails()
                                         .stream()
@@ -42,6 +72,7 @@ public class MaterialReceiptMapper {
                                                 MaterialReceiptDetailResponseDTO
                                                         .builder()
                                                         .materialName(d.getMaterial().getName())
+                                                        .materialStatus(d.getMaterial().getStatus())
                                                         .quantity(d.getQuantity())
                                                         .unitCost(d.getUnitCost())
                                                         .subtotal(d.getUnitCost()

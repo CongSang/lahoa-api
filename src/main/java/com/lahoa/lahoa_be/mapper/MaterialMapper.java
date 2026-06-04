@@ -1,6 +1,7 @@
 package com.lahoa.lahoa_be.mapper;
 
 import com.lahoa.lahoa_be.dto.request.MaterialRequestDTO;
+import com.lahoa.lahoa_be.dto.response.DropdownResponseDTO;
 import com.lahoa.lahoa_be.dto.response.MaterialResponseDTO;
 import com.lahoa.lahoa_be.entity.MaterialEntity;
 import lombok.RequiredArgsConstructor;
@@ -37,6 +38,15 @@ public class MaterialMapper {
                 .thumbnailPublicId(entity.getThumbnailPublicId())
                 .lowStockThreshold(entity.getLowStockThreshold())
                 .status(entity.getStatus())
+                .build();
+    }
+
+    public DropdownResponseDTO toDropdown(MaterialEntity entity) {
+        if (entity == null) return null;
+        return DropdownResponseDTO.builder()
+                .id(entity.getId())
+                .value(entity.getId().toString())
+                .label(entity.getName())
                 .build();
     }
 }

@@ -10,6 +10,7 @@ import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
+import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 
@@ -70,4 +71,25 @@ public interface MaterialInventoryRepository extends
             @Param("lowStock") Boolean lowStock,
             @Param("outOfStock") Boolean outOfStock,
             Pageable pageable);
+
+    @Query("""
+        select count(distinct i.material.id)
+        from MaterialInventoryEntity i
+        where i.warehouse.id = :warehouseId
+          and i.material.status <> 'DELETED'
+          and (i.onHand > 0 or i.reserved > 0)
+    """)
+    Long countMaterialsByWarehouseId(Long warehouseId);
+
+    @Query("""
+        select
+            i.warehouse.id as warehouseId,
+            count(distinct i.material.id) as materialCount
+        from MaterialInventoryEntity i
+        where i.warehouse.id in :warehouseIds
+          and i.material.status <> 'DELETED'
+          and (i.onHand > 0 or i.reserved > 0)
+        group by i.warehouse.id
+    """)
+    List<Object[]> countMaterialsByWarehouseIds(Collection<Long> warehouseIds);
 }

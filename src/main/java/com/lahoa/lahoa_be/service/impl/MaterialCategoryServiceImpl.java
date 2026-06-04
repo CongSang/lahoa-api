@@ -51,8 +51,8 @@ public class MaterialCategoryServiceImpl implements MaterialCategoryService {
                 );
     }
 
-    private Long countMaterialByCategoryId(Long id) {
-        return materialRepository.countByCategoryId(id);
+    private Long countMaterial(Long id) {
+        return materialRepository.countByCategoryIdAndStatusNot(id, Status.DELETED);
     }
 
     @Override
@@ -141,7 +141,7 @@ public class MaterialCategoryServiceImpl implements MaterialCategoryService {
     @Transactional
     public MaterialCategoryResponseDTO update(Long id, MaterialCategoryRequestDTO req) {
         MaterialCategoryEntity entity = getEntity(id);
-        Long countMaterial = countMaterialByCategoryId(id);
+        Long countMaterial = countMaterial(id);
 
         MaterialCategoryResponseDTO oldMaterial = materialCategoryMapper.toDTO(entity, countMaterial);
 
@@ -176,13 +176,13 @@ public class MaterialCategoryServiceImpl implements MaterialCategoryService {
     @Override
     @Transactional
     public void delete(Long id) {
-        MaterialCategoryEntity entity = getEntity(id);
-
         if (materialRepository.existsByCategoryId(id)) {
             throw new BadRequestException(
                     "Danh mục đang được sử dụng"
             );
         }
+
+        MaterialCategoryEntity entity = getEntity(id);
 
         entity.setStatus(Status.DELETED);
 
@@ -232,7 +232,7 @@ public class MaterialCategoryServiceImpl implements MaterialCategoryService {
     @Transactional
     public MaterialCategoryResponseDTO updateStatus(Long id) {
         MaterialCategoryEntity entity = getEntity(id);
-        Long countMaterial = countMaterialByCategoryId(id);
+        Long countMaterial = countMaterial(id);
 
         MaterialCategoryResponseDTO oldMaterial = materialCategoryMapper.toDTO(entity, countMaterial);
 

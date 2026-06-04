@@ -6,6 +6,7 @@ import com.lahoa.lahoa_be.common.enums.Status;
 import com.lahoa.lahoa_be.dto.filter.WarehouseFilterRequestDTO;
 import com.lahoa.lahoa_be.dto.request.WarehouseRequestDTO;
 import com.lahoa.lahoa_be.dto.response.DropdownResponseDTO;
+import com.lahoa.lahoa_be.dto.error.MaterialStockInfoDTO;
 import com.lahoa.lahoa_be.dto.response.PagedResponseDTO;
 import com.lahoa.lahoa_be.dto.response.WarehouseResponseDTO;
 import com.lahoa.lahoa_be.entity.WarehouseEntity;
@@ -13,8 +14,10 @@ import com.lahoa.lahoa_be.exception.BadRequestException;
 import com.lahoa.lahoa_be.exception.ResourceNotFoundException;
 import com.lahoa.lahoa_be.mapper.PagedMapper;
 import com.lahoa.lahoa_be.mapper.WarehouseMapper;
+import com.lahoa.lahoa_be.repository.MaterialInventoryRepository;
 import com.lahoa.lahoa_be.repository.WarehouseRepository;
 import com.lahoa.lahoa_be.service.AuditLogService;
+import com.lahoa.lahoa_be.service.MaterialInventoryService;
 import com.lahoa.lahoa_be.service.WarehouseService;
 import com.lahoa.lahoa_be.specification.WarehouseSpecification;
 import com.lahoa.lahoa_be.util.CompareUtils;
@@ -30,6 +33,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 @Slf4j
 @Service
@@ -38,9 +42,11 @@ import java.util.Map;
 public class WarehouseServiceImpl implements WarehouseService {
 
     private final WarehouseRepository warehouseRepository;
+    private final MaterialInventoryRepository inventoryRepository;
     private final WarehouseMapper warehouseMapper;
     private final PagedMapper pagedMapper;
     private final AuditLogService auditService;
+    private final MaterialInventoryService inventoryService;
 
     private void validateCode(String code, Long excludeId) {
 
@@ -90,8 +96,25 @@ public class WarehouseServiceImpl implements WarehouseService {
 
         Page<WarehouseEntity> whPaged = warehouseRepository.findAll(spec, pageable);
 
+        List<Long> ids = whPaged.getContent()
+                        .stream()
+                        .map(WarehouseEntity::getId)
+                        .toList();
+
+        Map<Long, Long> countMap = inventoryRepository
+                .countMaterialsByWarehouseIds(ids)
+                .stream()
+                .collect(Collectors.toMap(
+                        r -> (Long) r[0],
+                        r -> (Long) r[1]
+                ));
+
         List<WarehouseResponseDTO> dtoList = whPaged.getContent()
-                .stream().map(warehouseMapper::toDTO).toList();
+                .stream().map(wh ->
+                        warehouseMapper.toDTO(
+                                wh,
+                                countMap.getOrDefault(wh.getId(), 0L)
+                        )).toList();
 
         return pagedMapper.toDTO(whPaged, dtoList);
     }
@@ -113,7 +136,7 @@ public class WarehouseServiceImpl implements WarehouseService {
 
         WarehouseEntity saved = warehouseRepository.save(entity);
 
-        WarehouseResponseDTO newWarehouse = warehouseMapper.toDTO(entity);
+        WarehouseResponseDTO newWarehouse = warehouseMapper.toDTO(saved, 0L);
 
         auditService.logAfterCommit(
                 AuditAction.CREATE,
@@ -135,8 +158,9 @@ public class WarehouseServiceImpl implements WarehouseService {
         validateCode(req.getCode(), id);
 
         WarehouseEntity entity = getEntity(id);
+        Long materialCount = countMaterial(entity.getId());
 
-        WarehouseResponseDTO oldWarehouse = warehouseMapper.toDTO(entity);
+        WarehouseResponseDTO oldWarehouse = warehouseMapper.toDTO(entity, materialCount);
 
 
         entity.setCode(req.getCode());
@@ -146,7 +170,7 @@ public class WarehouseServiceImpl implements WarehouseService {
 
         WarehouseEntity saved = warehouseRepository.save(entity);
 
-        WarehouseResponseDTO newWarehouse = warehouseMapper.toDTO(saved);
+        WarehouseResponseDTO newWarehouse = warehouseMapper.toDTO(saved, materialCount);
 
         Map<String, Object> changed =
                 CompareUtils.diff(oldWarehouse, newWarehouse);
@@ -171,8 +195,9 @@ public class WarehouseServiceImpl implements WarehouseService {
     @Override
     public WarehouseResponseDTO updateStatus(Long id) {
         WarehouseEntity entity = getEntity(id);
+        Long materialCount = countMaterial(entity.getId());
 
-        WarehouseResponseDTO oldWarehouse = warehouseMapper.toDTO(entity);
+        WarehouseResponseDTO oldWarehouse = warehouseMapper.toDTO(entity, materialCount);
 
         entity.setStatus(
                 entity.getStatus() ==
@@ -183,7 +208,7 @@ public class WarehouseServiceImpl implements WarehouseService {
 
         WarehouseEntity saved = warehouseRepository.save(entity);
 
-        WarehouseResponseDTO newWarehouse = warehouseMapper.toDTO(saved);
+        WarehouseResponseDTO newWarehouse = warehouseMapper.toDTO(saved, materialCount);
 
         Map<String, Object> changed =
                 CompareUtils.diff(oldWarehouse, newWarehouse);
@@ -202,12 +227,24 @@ public class WarehouseServiceImpl implements WarehouseService {
 
         log.info("Changed status Material id={} to {}", id, newWarehouse.getStatus());
 
-        return warehouseMapper.toDTO(entity);
+        return newWarehouse;
     }
 
     @Override
     public void delete(Long id) {
         WarehouseEntity entity = getEntity(id);
+
+        List<MaterialStockInfoDTO> remainingStocks =
+                inventoryService.getStockByWarehouseId(id);
+
+        if (!remainingStocks.isEmpty()) {
+            throw new BadRequestException(
+                    buildStockMessage(
+                            entity,
+                            remainingStocks
+                    )
+            );
+        }
 
         entity.setStatus(Status.DELETED);
 
@@ -249,6 +286,41 @@ public class WarehouseServiceImpl implements WarehouseService {
 
         log.info("Restored Warehouse id={}", id);
 
-        return warehouseMapper.toDTO(saved);
+        return warehouseMapper.toDTO(saved, countMaterial(saved.getId()));
+    }
+
+    private Long countMaterial(Long id) {
+        return inventoryRepository.countMaterialsByWarehouseId(id);
+    }
+
+    private String buildStockMessage(
+            WarehouseEntity warehouse,
+            List<MaterialStockInfoDTO> stocks
+    ) {
+
+        StringBuilder sb = new StringBuilder();
+
+        sb.append("Không thể xóa kho ")
+                .append(warehouse.getName())
+                .append(".\n\n");
+
+        for (MaterialStockInfoDTO stock : stocks) {
+            sb.append("- ")
+                    .append(stock.getWarehouseName())
+                    .append(": còn ")
+                    .append(stock.getOnHand());
+
+            if (stock.getReserved() > 0) {
+                sb.append(" (giữ ")
+                        .append(stock.getReserved())
+                        .append(")");
+            }
+
+            sb.append("\n");
+        }
+
+        sb.append("\nVui lòng xử lý tồn kho trước khi xóa.");
+
+        return sb.toString();
     }
 }

@@ -3,6 +3,7 @@ package com.lahoa.lahoa_be.service;
 import com.lahoa.lahoa_be.dto.filter.MaterialInventoryFilterRequestDTO;
 import com.lahoa.lahoa_be.dto.request.InventoryActionRequestDTO;
 import com.lahoa.lahoa_be.dto.response.MaterialInventorySummaryResponseDTO;
+import com.lahoa.lahoa_be.dto.error.MaterialStockInfoDTO;
 import com.lahoa.lahoa_be.dto.response.MaterialWarehouseInventoryResponseDTO;
 import com.lahoa.lahoa_be.dto.response.PagedResponseDTO;
 
@@ -28,4 +29,8 @@ public interface MaterialInventoryService {
     PagedResponseDTO<MaterialInventorySummaryResponseDTO> list(MaterialInventoryFilterRequestDTO filter);
 
     List<MaterialWarehouseInventoryResponseDTO> getWarehouseInventories(Long materialId);
+
+    List<MaterialStockInfoDTO> getStockByMaterialId(Long materialId);
+
+    List<MaterialStockInfoDTO> getStockByWarehouseId(Long warehouseId);
 }

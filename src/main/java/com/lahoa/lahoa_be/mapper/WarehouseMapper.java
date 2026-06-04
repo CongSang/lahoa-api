@@ -19,7 +19,7 @@ public class WarehouseMapper {
                 .build();
     }
 
-    public WarehouseResponseDTO toDTO(WarehouseEntity entity) {
+    public WarehouseResponseDTO toDTO(WarehouseEntity entity, Long materialCount) {
         if (entity == null) return null;
         return WarehouseResponseDTO.builder()
                 .id(entity.getId())
@@ -27,7 +27,7 @@ public class WarehouseMapper {
                 .name(entity.getName())
                 .address(entity.getAddress())
                 .status(entity.getStatus())
-                .materialCount(0L)
+                .materialCount(materialCount)
                 .build();
     }
 

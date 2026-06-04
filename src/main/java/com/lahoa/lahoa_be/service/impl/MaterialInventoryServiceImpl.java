@@ -4,6 +4,7 @@ import com.lahoa.lahoa_be.common.enums.InventoryMovementType;
 import com.lahoa.lahoa_be.dto.filter.MaterialInventoryFilterRequestDTO;
 import com.lahoa.lahoa_be.dto.request.InventoryActionRequestDTO;
 import com.lahoa.lahoa_be.dto.response.MaterialInventorySummaryResponseDTO;
+import com.lahoa.lahoa_be.dto.error.MaterialStockInfoDTO;
 import com.lahoa.lahoa_be.dto.response.MaterialWarehouseInventoryResponseDTO;
 import com.lahoa.lahoa_be.dto.response.PagedResponseDTO;
 import com.lahoa.lahoa_be.entity.MaterialEntity;
@@ -243,6 +244,66 @@ public class MaterialInventoryServiceImpl implements MaterialInventoryService {
                                     .build();
                 })
                 .toList();
+    }
+
+    @Override
+    public List<MaterialStockInfoDTO> getStockByMaterialId(Long materialId) {
+        return inventoryRepository.findAll(
+                (root, query, cb) -> cb.and(
+                        cb.equal(
+                                root.get("material").get("id"),
+                                materialId
+                        ),
+                        cb.or(
+                                cb.greaterThan(
+                                        root.get("onHand"),
+                                        0
+                                ),
+                                cb.greaterThan(
+                                        root.get("reserved"),
+                                        0
+                                )
+                        )
+                )
+        ).stream()
+        .map(inv ->
+                MaterialStockInfoDTO.builder()
+                        .warehouseName(inv.getWarehouse().getName())
+                        .onHand(inv.getOnHand())
+                        .reserved(inv.getReserved())
+                        .build()
+        )
+        .toList();
+    }
+
+    @Override
+    public List<MaterialStockInfoDTO> getStockByWarehouseId(Long warehouseId) {
+        return inventoryRepository.findAll(
+                (root, query, cb) -> cb.and(
+                        cb.equal(
+                                root.get("warehouse").get("id"),
+                                warehouseId
+                        ),
+                        cb.or(
+                                cb.greaterThan(
+                                        root.get("onHand"),
+                                        0
+                                ),
+                                cb.greaterThan(
+                                        root.get("reserved"),
+                                        0
+                                )
+                        )
+                )
+        ).stream()
+        .map(inv ->
+                MaterialStockInfoDTO.builder()
+                        .warehouseName(inv.getWarehouse().getName())
+                        .onHand(inv.getOnHand())
+                        .reserved(inv.getReserved())
+                        .build()
+        )
+        .toList();
     }
 
     private void updateWeightedCost(

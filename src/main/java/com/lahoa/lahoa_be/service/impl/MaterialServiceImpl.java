@@ -5,7 +5,9 @@ import com.lahoa.lahoa_be.common.enums.AuditEntityType;
 import com.lahoa.lahoa_be.common.enums.CodePrefix;
 import com.lahoa.lahoa_be.common.enums.Status;
 import com.lahoa.lahoa_be.dto.request.MaterialRequestDTO;
+import com.lahoa.lahoa_be.dto.response.DropdownResponseDTO;
 import com.lahoa.lahoa_be.dto.response.MaterialResponseDTO;
+import com.lahoa.lahoa_be.dto.error.MaterialStockInfoDTO;
 import com.lahoa.lahoa_be.entity.MaterialCategoryEntity;
 import com.lahoa.lahoa_be.entity.MaterialEntity;
 import com.lahoa.lahoa_be.exception.BadRequestException;
@@ -13,16 +15,14 @@ import com.lahoa.lahoa_be.exception.ResourceNotFoundException;
 import com.lahoa.lahoa_be.mapper.MaterialMapper;
 import com.lahoa.lahoa_be.repository.MaterialCategoryRepository;
 import com.lahoa.lahoa_be.repository.MaterialRepository;
-import com.lahoa.lahoa_be.service.AuditLogService;
-import com.lahoa.lahoa_be.service.CloudinaryService;
-import com.lahoa.lahoa_be.service.CodeGeneratorService;
-import com.lahoa.lahoa_be.service.MaterialService;
+import com.lahoa.lahoa_be.service.*;
 import com.lahoa.lahoa_be.util.CompareUtils;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.List;
 import java.util.Map;
 
 @Slf4j
@@ -36,6 +36,7 @@ public class MaterialServiceImpl implements MaterialService {
     private final CloudinaryService cloudinaryService;
     private final CodeGeneratorService codeService;
     private final AuditLogService auditService;
+    private final MaterialInventoryService inventoryService;
 
     private MaterialCategoryEntity getCategory( Long id) {
         return categoryRepository.findById(id)
@@ -156,6 +157,18 @@ public class MaterialServiceImpl implements MaterialService {
     public void delete(Long id) {
         MaterialEntity material = getEntity(id);
 
+        List<MaterialStockInfoDTO> remainingStocks =
+                inventoryService.getStockByMaterialId(id);
+
+        if (!remainingStocks.isEmpty()) {
+            throw new BadRequestException(
+                    buildStockMessage(
+                            material,
+                            remainingStocks
+                    )
+            );
+        }
+
         cloudinaryService.deleteAfterCommit(material.getThumbnailPublicId());
         material.setThumbnail(null);
         material.setThumbnailPublicId(null);
@@ -238,5 +251,45 @@ public class MaterialServiceImpl implements MaterialService {
         log.info("Changed status Material id={} to {}", id, newMaterial.getStatus());
 
         return newMaterial;
+    }
+
+    @Override
+    public List<DropdownResponseDTO> getDropdown() {
+        List<MaterialEntity> materials = materialRepository.findAllByStatus(Status.ACTIVE);
+
+        return materials.stream()
+                .map(materialMapper::toDropdown)
+                .toList();
+    };
+
+    private String buildStockMessage(
+            MaterialEntity material,
+            List<MaterialStockInfoDTO> stocks
+    ) {
+
+        StringBuilder sb = new StringBuilder();
+
+        sb.append("Không thể xóa nguyên liệu ")
+                .append(material.getName())
+                .append(".\n\n");
+
+        for (MaterialStockInfoDTO stock : stocks) {
+            sb.append("- ")
+                    .append(stock.getWarehouseName())
+                    .append(": còn ")
+                    .append(stock.getOnHand());
+
+            if (stock.getReserved() > 0) {
+                sb.append(" (giữ ")
+                        .append(stock.getReserved())
+                        .append(")");
+            }
+
+            sb.append("\n");
+        }
+
+        sb.append("\nVui lòng xử lý tồn kho trước khi xóa.");
+
+        return sb.toString();
     }
 }
