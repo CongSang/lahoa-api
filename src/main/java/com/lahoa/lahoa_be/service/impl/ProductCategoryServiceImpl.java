@@ -61,7 +61,7 @@ public class ProductCategoryServiceImpl implements ProductCategoryService {
                 sort
         );
 
-        Page<ProductCategoryEntity> categoriesPaged = categoryRepository
+        Page<Object[]> categoriesPaged = categoryRepository
                 .findByFilters(
                         filter.getKeyword(),
                         filter.getStatus(),
@@ -69,33 +69,14 @@ public class ProductCategoryServiceImpl implements ProductCategoryService {
                         pageable
                 );
 
-        List<ProductCategoryEntity> categories = categoriesPaged.getContent();
+        List<CategoryResponseDTO> dtoList = categoriesPaged.getContent().stream()
+                .map(result -> {
+                    ProductCategoryEntity c = (ProductCategoryEntity) result[0];
+                    Long productCountFromDb = (Long) result[1];
 
-        List<Long> ids = categories.stream()
-                .map(ProductCategoryEntity::getId)
-                .toList();
-
-        Map<Long, Long> countMap = mappingRepository
-                .countProductsByCategoryIds(ids)
-                .stream()
-                .collect(Collectors.toMap(
-                        r -> (Long) r[0],
-                        r -> (Long) r[1]
-                ));
-
-        Set<Long> parentSet = new HashSet<>(
-                categoryRepository.findParentIdsHavingChildren(ids)
-        );
-
-        List<CategoryResponseDTO> dtoList = categories.stream()
-                .map(c -> {
                     CategoryResponseDTO dto = categoryMapper.toDTO(c);
 
-                    boolean isLeaf = !parentSet.contains(c.getId());
-
-                    dto.setProductCount(
-                            isLeaf ? countMap.getOrDefault(c.getId(), 0L) : 0
-                    );
+                    dto.setProductCount(productCountFromDb != null ? productCountFromDb : 0L);
 
                     return dto;
                 })
@@ -317,7 +298,7 @@ public class ProductCategoryServiceImpl implements ProductCategoryService {
         }
 
         if (mappingRepository.existsByCategoryId(id)) {
-            throw new BadRequestException("Không thể xóa danh mục đang chứa sản phẩm");
+            throw new BadRequestException("Không thể xóa danh mục đang có sản phẩm");
         }
 
         cloudinaryService.deleteAfterCommit(category.getImagePublicId());

@@ -25,6 +25,19 @@ public interface MaterialInventoryRepository extends
 
     List<MaterialInventoryEntity> findByMaterialId(Long materialId);
 
+    @Query("""
+        select mi
+        from MaterialInventoryEntity mi
+        join fetch mi.material m
+        where mi.warehouse.id = :warehouseId
+          and m.status <> :status
+          and mi.onHand > 0
+    """)
+    List<MaterialInventoryEntity> findStocktakeMaterials(
+            Long warehouseId,
+            Status status
+    );
+
     @Query("SELECT new com.lahoa.lahoa_be.dto.response.MaterialInventorySummaryResponseDTO(" +
             "m.id, c.id, c.name, m.code, m.name, m.unit, m.thumbnail, m.thumbnailPublicId, m.status, " +
 

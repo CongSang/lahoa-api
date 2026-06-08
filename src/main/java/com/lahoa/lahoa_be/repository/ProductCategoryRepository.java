@@ -17,23 +17,27 @@ public interface ProductCategoryRepository extends JpaRepository<ProductCategory
 
     @EntityGraph(attributePaths = {"parent"})
     @Query("""
-            SELECT c
-            FROM ProductCategoryEntity c
-            LEFT JOIN FETCH c.parent
-            WHERE
-                (
-                    (:status IS NULL AND c.status <> 'DELETED')
-                    OR (:status IS NOT NULL AND c.status = :status)
-                )
-                AND (:keyword IS NULL OR :keyword = ''
-                     OR LOWER(c.name) LIKE LOWER(CONCAT('%', :keyword, '%')))
-                AND (
-                    (:parentId IS NULL)
-                    OR (:parentId = -1 AND c.parent IS NULL)
-                    OR (c.parent.id = :parentId)
-                )
-            """)
-    Page<ProductCategoryEntity> findByFilters(
+        SELECT c,
+               (SELECT COUNT(pm.id)
+                 FROM ProductCategoryMappingEntity pm
+                 WHERE pm.category.id = c.id
+                   AND pm.product.status <> 'DELETED') AS productCount
+        FROM ProductCategoryEntity c
+        LEFT JOIN c.parent
+        WHERE
+            (
+                (:status IS NULL AND c.status <> 'DELETED')
+                OR (:status IS NOT NULL AND c.status = :status)
+            )
+            AND (:keyword IS NULL OR :keyword = ''
+                 OR LOWER(c.name) LIKE LOWER(CONCAT('%', :keyword, '%')))
+            AND (
+                (:parentId IS NULL)
+                OR (:parentId = -1 AND c.parent IS NULL)
+                OR (c.parent.id = :parentId)
+            )
+        """)
+    Page<Object[]> findByFilters(
             @Param("keyword") String keyword,
             @Param("status") Status status,
             @Param("parentId") Long parentId,
@@ -54,13 +58,6 @@ public interface ProductCategoryRepository extends JpaRepository<ProductCategory
     List<ProductCategoryEntity> findByParentIsNullAndStatus(Status status);
 
     List<ProductCategoryEntity> findAllByStatus(Status status);
-
-    @Query("""
-        SELECT c.id
-        FROM ProductCategoryEntity c
-        WHERE c.parent.id IN :ids
-    """)
-    List<Long> findParentIdsHavingChildren(List<Long> ids);
 
     boolean existsBySlugAndIdNot(String slug, Long id);
 }

@@ -58,7 +58,7 @@ public class MaterialReceiptServiceImpl implements MaterialReceiptService {
                         .supplier(req.getSupplier())
                         .note(req.getNote())
                         .warehouse(warehouse)
-                        .createdBy(Objects.requireNonNull(SecurityUtils.getCurrentUser()).getId())
+                        .createdBy(SecurityUtils.getCurrentUser())
                         .details(new ArrayList<>())
                         .build();
 
@@ -119,6 +119,10 @@ public class MaterialReceiptServiceImpl implements MaterialReceiptService {
 
         if (sortField.equals("warehouseName")) {
             sortField = "warehouse.name";
+        }
+
+        if (sortField.equals("itemCount")) {
+            sortField = "details";
         }
 
         Sort sort = filter.getSortOrder().equalsIgnoreCase(Sort.Direction.ASC.name())

@@ -38,5 +38,5 @@ public class AuditLogResponseDTO {
 
     private String traceId;
 
-    private LocalDateTime createAt;
+    private LocalDateTime createdAt;
 }

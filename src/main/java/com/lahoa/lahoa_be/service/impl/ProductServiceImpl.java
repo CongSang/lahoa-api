@@ -35,6 +35,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.math.BigDecimal;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.stream.Collectors;
 
 @Slf4j
@@ -81,7 +82,13 @@ public class ProductServiceImpl implements ProductService {
             return pagedMapper.toDTO(productsPaged, List.of());
         }
 
-        List<ProductEntity> products = productRepository.findProductsWithCategories(ids);
+        List<ProductEntity> products = ids.stream()
+                .map(id -> productsPaged.stream()
+                        .filter(p -> p.getId().equals(id))
+                        .findFirst()
+                        .orElse(null))
+                .filter(Objects::nonNull)
+                .toList();
 
         List<ProductVariantEntity> variants = variantRepository.findAllByProductIdsAndStatusNot(ids, VariantStatus.DELETED);
 

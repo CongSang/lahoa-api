@@ -2,6 +2,8 @@ package com.lahoa.lahoa_be.repository;
 
 import com.lahoa.lahoa_be.common.enums.Status;
 import com.lahoa.lahoa_be.entity.MaterialEntity;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 import org.springframework.data.jpa.repository.Query;
@@ -17,17 +19,25 @@ public interface MaterialRepository
 
     long countByCategoryIdAndStatusNot(Long id, Status status);
 
-    @Query("""
-        select m.category.id, count(m)
-        from MaterialEntity m
-        where m.category.id in :categoryIds
-          and m.status <> 'DELETED'
-        group by m.category.id
-    """)
-    List<Object[]> countByCategoryIds(
-            @Param("categoryIds")
-            List<Long> categoryIds
-    );
-
     List<MaterialEntity> findAllByStatus(Status status);
+
+    @Query("""
+        SELECT c,
+               (SELECT COUNT(m.id) 
+                FROM MaterialEntity m 
+                WHERE m.category.id = c.id 
+                  AND m.status <> 'DELETED') AS materialCount
+        FROM MaterialCategoryEntity c
+        WHERE
+            (
+                (:status IS NULL AND c.status <> 'DELETED')
+                OR (:status IS NOT NULL AND c.status = :status)
+            )
+            AND (:keyword IS NULL OR :keyword = ''
+                 OR LOWER(c.name) LIKE LOWER(CONCAT('%', :keyword, '%')))
+        """)
+    Page<Object[]> findByFilters(
+            @Param("keyword") String keyword,
+            @Param("status") Status status,
+            Pageable pageable);
 }

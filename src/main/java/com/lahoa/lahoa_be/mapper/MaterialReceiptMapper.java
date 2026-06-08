@@ -3,6 +3,7 @@ package com.lahoa.lahoa_be.mapper;
 import com.lahoa.lahoa_be.dto.response.MaterialReceiptDetailResponseDTO;
 import com.lahoa.lahoa_be.dto.response.MaterialReceiptResponseDTO;
 import com.lahoa.lahoa_be.entity.MaterialReceiptEntity;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
 import java.math.BigDecimal;
@@ -11,80 +12,82 @@ import java.math.BigDecimal;
 public class MaterialReceiptMapper {
 
     public MaterialReceiptResponseDTO toListDTO(MaterialReceiptEntity r) {
-        return
-                MaterialReceiptResponseDTO
-                        .builder()
-                        .id(r.getId())
-                        .code(r.getCode())
-                        .supplier(r.getSupplier())
-                        .note(r.getNote())
-                        .warehouseName(r.getWarehouse().getName())
-                        .warehouseStatus(r.getWarehouse().getStatus())
-                        .totalCost(
-                                r.getDetails()
-                                        .stream()
-                                        .map(d -> d.getUnitCost()
-                                                .multiply(
-                                                        BigDecimal.valueOf(
-                                                                d.getQuantity()
-                                                        )
-                                                )
-                                        )
-                                        .reduce(
-                                                BigDecimal.ZERO,
-                                                BigDecimal::add
-                                        )
-                        )
-                        .itemCount(r.getDetails().size())
-                        .createdAt(r.getCreatedAt())
-                        .build();
+        return MaterialReceiptResponseDTO
+                    .builder()
+                    .id(r.getId())
+                    .code(r.getCode())
+                    .supplier(r.getSupplier())
+                    .note(r.getNote())
+                    .warehouseName(r.getWarehouse().getName())
+                    .warehouseStatus(r.getWarehouse().getStatus())
+                    .totalCost(
+                            r.getDetails()
+                                    .stream()
+                                    .map(d -> d.getUnitCost()
+                                            .multiply(
+                                                    BigDecimal.valueOf(
+                                                            d.getQuantity()
+                                                    )
+                                            )
+                                    )
+                                    .reduce(
+                                            BigDecimal.ZERO,
+                                            BigDecimal::add
+                                    )
+                    )
+                    .itemCount(r.getDetails().size())
+                    .createdBy(r.getCreatedBy().getFullName())
+                    .createdAt(r.getCreatedAt())
+                    .build();
     }
 
     public MaterialReceiptResponseDTO toDTO(MaterialReceiptEntity r) {
-        return
-                MaterialReceiptResponseDTO
-                        .builder()
-                        .id(r.getId())
-                        .code(r.getCode())
-                        .supplier(r.getSupplier())
-                        .note(r.getNote())
-                        .warehouseName(r.getWarehouse().getName())
-                        .warehouseStatus(r.getWarehouse().getStatus())
-                        .totalCost(
-                                r.getDetails()
-                                        .stream()
-                                        .map(d -> d.getUnitCost()
-                                                .multiply(
-                                                        BigDecimal.valueOf(
-                                                                d.getQuantity()
-                                                        )
-                                                )
-                                        )
-                                        .reduce(
-                                                BigDecimal.ZERO,
-                                                BigDecimal::add
-                                        )
-                        )
-                        .details(
-                                r.getDetails()
-                                        .stream()
-                                        .map(d ->
-                                                MaterialReceiptDetailResponseDTO
-                                                        .builder()
-                                                        .materialName(d.getMaterial().getName())
-                                                        .materialStatus(d.getMaterial().getStatus())
-                                                        .quantity(d.getQuantity())
-                                                        .unitCost(d.getUnitCost())
-                                                        .subtotal(d.getUnitCost()
-                                                                .multiply(
-                                                                        BigDecimal.valueOf(d.getQuantity())
-                                                                )
-                                                        )
-                                                        .build()
-                                        )
-                                        .toList()
-                        )
-                        .createdAt(r.getCreatedAt())
-                        .build();
+        return MaterialReceiptResponseDTO
+                    .builder()
+                    .id(r.getId())
+                    .code(r.getCode())
+                    .supplier(r.getSupplier())
+                    .note(r.getNote())
+                    .warehouseId(r.getWarehouse().getId())
+                    .warehouseName(r.getWarehouse().getName())
+                    .warehouseStatus(r.getWarehouse().getStatus())
+                    .totalCost(
+                            r.getDetails()
+                                    .stream()
+                                    .map(d -> d.getUnitCost()
+                                            .multiply(
+                                                    BigDecimal.valueOf(
+                                                            d.getQuantity()
+                                                    )
+                                            )
+                                    )
+                                    .reduce(
+                                            BigDecimal.ZERO,
+                                            BigDecimal::add
+                                    )
+                    )
+                    .details(
+                            r.getDetails()
+                                    .stream()
+                                    .map(d ->
+                                            MaterialReceiptDetailResponseDTO
+                                                    .builder()
+                                                    .materialId(d.getMaterial().getId())
+                                                    .materialName(d.getMaterial().getName())
+                                                    .materialStatus(d.getMaterial().getStatus())
+                                                    .quantity(d.getQuantity())
+                                                    .unitCost(d.getUnitCost())
+                                                    .subtotal(d.getUnitCost()
+                                                            .multiply(
+                                                                    BigDecimal.valueOf(d.getQuantity())
+                                                            )
+                                                    )
+                                                    .build()
+                                    )
+                                    .toList()
+                    )
+                    .createdBy(r.getCreatedBy().getFullName())
+                    .createdAt(r.getCreatedAt())
+                    .build();
     }
 }

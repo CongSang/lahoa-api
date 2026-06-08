@@ -17,7 +17,6 @@ import com.lahoa.lahoa_be.repository.MaterialCategoryRepository;
 import com.lahoa.lahoa_be.repository.MaterialRepository;
 import com.lahoa.lahoa_be.service.AuditLogService;
 import com.lahoa.lahoa_be.service.MaterialCategoryService;
-import com.lahoa.lahoa_be.specification.MaterialCategorySpecification;
 import com.lahoa.lahoa_be.util.CompareUtils;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -25,7 +24,6 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
-import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -58,8 +56,6 @@ public class MaterialCategoryServiceImpl implements MaterialCategoryService {
     @Override
     @Transactional(readOnly = true)
     public PagedResponseDTO<MaterialCategoryResponseDTO> list(MaterialCategoryFilterRequestDTO filter) {
-        Specification<MaterialCategoryEntity> spec = MaterialCategorySpecification.filter(filter);
-
         Sort sort = filter.getSortOrder().equalsIgnoreCase(Sort.Direction.ASC.name())
                 ? Sort.by(filter.getSortField()).ascending()
                 : Sort.by(filter.getSortField()).descending();
@@ -70,35 +66,26 @@ public class MaterialCategoryServiceImpl implements MaterialCategoryService {
                 sort
         );
 
-        Page<MaterialCategoryEntity> categoryPaged = categoryRepository.findAll(spec, pageable);
-        List<Long> ids =
-                categoryPaged.getContent()
-                        .stream()
-                        .map(
-                                MaterialCategoryEntity::getId
-                        )
-                        .toList();
+        Page<Object[]> materialPaged = materialRepository.findByFilters(
+                filter.getKeyword(),
+                filter.getStatus(),
+                pageable
+        );
 
-        Map<Long, Long> countMap =
-                materialRepository
-                        .countByCategoryIds(ids)
-                        .stream()
-                        .collect(
-                                Collectors.toMap(
-                                        row ->
-                                                (Long) row[0],
-                                        row ->
-                                                (Long) row[1]
-                                )
-                        );
+        List<MaterialCategoryResponseDTO> dtoList = materialPaged.getContent()
+                .stream()
+                .map(result -> {
+                    MaterialCategoryEntity c = (MaterialCategoryEntity) result[0];
+                    Long materialCountFromDb = (Long) result[1];
 
-        List<MaterialCategoryResponseDTO> dtoList = categoryPaged.getContent()
-                .stream().map(c -> materialCategoryMapper.toDTO(
-                        c,
-                        countMap.getOrDefault(c.getId(), 0L)
-                )).toList();
+                    return materialCategoryMapper.toDTO(
+                            c,
+                            materialCountFromDb != null ? materialCountFromDb : 0L
+                    );
+                })
+                .toList();
 
-        return pagedMapper.toDTO(categoryPaged, dtoList);
+        return pagedMapper.toDTO(materialPaged, dtoList);
     }
 
     @Override

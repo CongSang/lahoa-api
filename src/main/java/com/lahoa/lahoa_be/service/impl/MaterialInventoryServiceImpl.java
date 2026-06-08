@@ -331,7 +331,7 @@ public class MaterialInventoryServiceImpl implements MaterialInventoryService {
                         : totalOld.add(totalNew)
                         .divide(
                                 BigDecimal.valueOf(totalQty),
-                                2,
+                                0,
                                 RoundingMode.HALF_UP
                         );
 

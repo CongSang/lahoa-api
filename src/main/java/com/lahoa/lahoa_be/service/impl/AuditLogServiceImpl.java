@@ -231,7 +231,7 @@ public class AuditLogServiceImpl implements AuditLogService {
                             .endpoint(log.getEndpoint())
                             .method(log.getMethod())
                             .traceId(log.getTraceId())
-                            .createAt(log.getCreatedAt())
+                            .createdAt(log.getCreatedAt())
                             .build();
                 })
                 .toList();

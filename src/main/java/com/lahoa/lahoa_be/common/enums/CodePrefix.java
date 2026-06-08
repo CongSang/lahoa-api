@@ -7,5 +7,6 @@ public enum CodePrefix {
     MAT,
     ORD,
     GRN,
-    INMV
+    INMV,
+    STK
 }
