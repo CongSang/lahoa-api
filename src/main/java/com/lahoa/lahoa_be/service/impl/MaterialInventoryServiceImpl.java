@@ -103,7 +103,8 @@ public class MaterialInventoryServiceImpl implements MaterialInventoryService {
                 beforeReserved,
                 req.getNote(),
                 req.getReferenceType(),
-                req.getReferenceId()
+                req.getReferenceId(),
+                req.getReferenceCode()
         );
     }
 
@@ -129,7 +130,8 @@ public class MaterialInventoryServiceImpl implements MaterialInventoryService {
                 beforeReserved,
                 req.getNote(),
                 req.getReferenceType(),
-                req.getReferenceId()
+                req.getReferenceId(),
+                req.getReferenceCode()
         );
     }
 
@@ -153,7 +155,8 @@ public class MaterialInventoryServiceImpl implements MaterialInventoryService {
                 beforeReserved,
                 req.getNote(),
                 req.getReferenceType(),
-                req.getReferenceId()
+                req.getReferenceId(),
+                req.getReferenceCode()
         );
     }
 
@@ -177,7 +180,8 @@ public class MaterialInventoryServiceImpl implements MaterialInventoryService {
                 beforeReserved,
                 req.getNote(),
                 req.getReferenceType(),
-                req.getReferenceId()
+                req.getReferenceId(),
+                req.getReferenceCode()
         );
     }
 
@@ -205,7 +209,8 @@ public class MaterialInventoryServiceImpl implements MaterialInventoryService {
                 beforeReserved,
                 req.getNote(),
                 req.getReferenceType(),
-                req.getReferenceId()
+                req.getReferenceId(),
+                req.getReferenceCode()
         );
     }
 

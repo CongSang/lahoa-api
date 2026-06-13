@@ -66,6 +66,8 @@ public class StocktakeServiceImpl implements StocktakeService {
                         .details(new ArrayList<>())
                         .build();
 
+        stocktake = stocktakeRepository.save(stocktake);
+
         for (CreateStocktakeDetailRequestDTO d : req.getDetails()) {
             MaterialInventoryEntity inventory =
                     inventoryRepository
@@ -109,7 +111,8 @@ public class StocktakeServiceImpl implements StocktakeService {
                             .unitCost(null)
                             .note("Kiểm kê kho " + stocktake.getCode() + ": " + req.getNote())
                             .referenceType(InventoryReferenceType.STOCKTAKE)
-                            .referenceId(stocktake.getCode())
+                            .referenceId(stocktake.getId())
+                            .referenceCode(stocktake.getCode())
                             .build()
             );
         }

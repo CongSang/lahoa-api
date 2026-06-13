@@ -1,8 +1,6 @@
 package com.lahoa.lahoa_be.specification;
 
-import com.lahoa.lahoa_be.dto.filter.AuditLogFilterDTO;
 import com.lahoa.lahoa_be.dto.filter.MaterialReceiptFilterRequestDTO;
-import com.lahoa.lahoa_be.entity.AuditLogEntity;
 import com.lahoa.lahoa_be.entity.MaterialReceiptEntity;
 import org.springframework.data.jpa.domain.Specification;
 

@@ -62,6 +62,8 @@ public class MaterialReceiptServiceImpl implements MaterialReceiptService {
                         .details(new ArrayList<>())
                         .build();
 
+        receipt = receiptRepository.save(receipt);
+
         BigDecimal total = BigDecimal.ZERO;
 
         for (var d : req.getDetails()) {
@@ -89,9 +91,10 @@ public class MaterialReceiptServiceImpl implements MaterialReceiptService {
                             .warehouseId(req.getWarehouseId())
                             .quantity(d.getQuantity())
                             .unitCost(d.getUnitCost())
-                            .note(req.getNote())
+                            .note("Nhập hàng " + receipt.getCode() + ": " + req.getNote())
                             .referenceType(InventoryReferenceType.PURCHASE_ORDER)
-                            .referenceId(receipt.getCode())
+                            .referenceId(receipt.getId())
+                            .referenceCode(receipt.getCode())
                             .build()
             );
         }

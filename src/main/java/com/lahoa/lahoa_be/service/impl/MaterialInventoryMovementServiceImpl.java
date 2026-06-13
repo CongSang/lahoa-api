@@ -46,7 +46,8 @@ public class MaterialInventoryMovementServiceImpl implements MaterialInventoryMo
             Integer beforeReserved,
             String note,
             InventoryReferenceType referenceType,
-            String referenceId
+            Long referenceId,
+            String referenceCode
     ){
         UserEntity user = SecurityUtils.getCurrentUser();
 
@@ -64,12 +65,14 @@ public class MaterialInventoryMovementServiceImpl implements MaterialInventoryMo
                 .afterReserved(inv.getReserved())
                 .note(note)
                 .referenceType(referenceType)
+                .referenceCode(referenceCode)
                 .referenceId(referenceId)
                 .build()
         );
 
         if(user != null) {
             logEntity.setActorId(user.getId());
+            logEntity.setActorName(user.getFullName());
             logEntity.setActorEmail(user.getEmail());
         }
     }

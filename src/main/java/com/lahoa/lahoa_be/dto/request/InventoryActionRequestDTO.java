@@ -22,5 +22,7 @@ public class InventoryActionRequestDTO {
 
     private InventoryReferenceType referenceType;
 
-    private String referenceId;
+    private Long referenceId;
+
+    private String referenceCode;
 }

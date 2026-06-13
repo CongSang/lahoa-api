@@ -17,7 +17,8 @@ public interface MaterialInventoryMovementService {
             Integer beforeReserved,
             String note,
             InventoryReferenceType referenceType,
-            String referenceId
+            Long referenceId,
+            String referenceCode
     );
 
     PagedResponseDTO<MaterialInventoryMovementResponseDTO> list(MaterialInventoryMovementFilterRequestDTO filter);

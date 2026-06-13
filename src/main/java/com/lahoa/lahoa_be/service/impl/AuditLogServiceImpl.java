@@ -226,6 +226,7 @@ public class AuditLogServiceImpl implements AuditLogService {
                             .newData(log.getNewData())
                             .changedFields(log.getChangedFields())
                             .userId(log.getUserId())
+                            .userName(log.getUserName())
                             .userEmail(log.getUserEmail())
                             .ipAddress(log.getIpAddress())
                             .endpoint(log.getEndpoint())

@@ -43,10 +43,11 @@ public class MaterialInventoryMovementEntity extends BaseEntity {
     private String note;
 
     private Long actorId;
+    private String actorName;
     private String actorEmail;
 
     @Enumerated(EnumType.STRING)
     private InventoryReferenceType referenceType;
-
-    private String referenceId;
+    private Long referenceId;
+    private String referenceCode;
 }

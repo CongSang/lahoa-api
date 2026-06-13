@@ -7,6 +7,7 @@ import com.lahoa.lahoa_be.entity.MaterialInventoryMovementEntity;
 import jakarta.persistence.criteria.Predicate;
 import org.springframework.data.jpa.domain.Specification;
 
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -27,6 +28,34 @@ public class MaterialInventoryMovementSpecification {
                                 cb.like(cb.lower(root.get("material").get("name")), keyword),
                                 cb.like(cb.lower(root.get("warehouse").get("name")), keyword),
                                 cb.like(cb.lower(root.get("actorEmail")), keyword)
+                        )
+                );
+            }
+
+            if(req.getFromDate() != null) {
+                LocalDateTime startOfDay =
+                        req.getFromDate()
+                                .withHour(0)
+                                .withMinute(0)
+                                .withSecond(0);
+                predicates.add(
+                        cb.greaterThanOrEqualTo(
+                                root.get("createdAt"),
+                                startOfDay
+                        )
+                );
+            }
+
+            if(req.getToDate() != null) {
+                LocalDateTime endOfDay =
+                        req.getToDate()
+                                .withHour(23)
+                                .withMinute(59)
+                                .withSecond(59);
+                predicates.add(
+                        cb.lessThanOrEqualTo(
+                                root.get("createdAt"),
+                                endOfDay
                         )
                 );
             }
